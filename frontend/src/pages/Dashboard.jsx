@@ -1,0 +1,191 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import {
+  FiHeart, FiAlertTriangle, FiDroplet, FiMapPin,
+  FiCalendar, FiSun, FiBookOpen, FiDollarSign,
+  FiCoffee, FiChevronRight
+} from 'react-icons/fi';
+import useAuthStore from '../context/authStore';
+import { treatmentAPI, checkinAPI } from '../utils/api';
+import { format, isToday, isTomorrow, differenceInDays } from 'date-fns';
+
+const quickActions = [
+  { path: '/emergency', icon: FiAlertTriangle, label: 'Emergency', labelH: 'आपात', color: 'bg-red-500', textColor: 'text-white' },
+  { path: '/health-card', icon: FiHeart, label: 'Health Card', labelH: 'हेल्थ कार्ड', color: 'bg-rose-100', textColor: 'text-rose-700' },
+  { path: '/blood-request', icon: FiDroplet, label: 'Blood', labelH: 'रक्त', color: 'bg-red-100', textColor: 'text-red-700' },
+  { path: '/hospitals', icon: FiMapPin, label: 'Hospitals', labelH: 'अस्पताल', color: 'bg-blue-100', textColor: 'text-blue-700' },
+  { path: '/explain', icon: FiBookOpen, label: 'AI Help', labelH: 'AI सहायता', color: 'bg-purple-100', textColor: 'text-purple-700' },
+  { path: '/nutrition', icon: FiCoffee, label: 'Diet', labelH: 'आहार', color: 'bg-green-100', textColor: 'text-green-700' },
+  { path: '/schemes', icon: FiDollarSign, label: 'Schemes', labelH: 'योजनाएं', color: 'bg-yellow-100', textColor: 'text-yellow-700' },
+  { path: '/donor', icon: FiDroplet, label: 'Donate', labelH: 'दान करें', color: 'bg-teal-100', textColor: 'text-teal-700' },
+];
+
+const typeColors = {
+  chemotherapy: 'bg-purple-100 text-purple-700',
+  radiotherapy: 'bg-orange-100 text-orange-700',
+  surgery: 'bg-red-100 text-red-700',
+  followup: 'bg-blue-100 text-blue-700',
+  labtest: 'bg-teal-100 text-teal-700',
+  medication: 'bg-green-100 text-green-700',
+};
+
+const typeLabels = {
+  chemotherapy: 'कीमो', radiotherapy: 'रेडियो', surgery: 'सर्जरी',
+  followup: 'फॉलोअप', labtest: 'टेस्ट', medication: 'दवाई',
+};
+
+export default function Dashboard() {
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const [treatments, setTreatments] = useState([]);
+  const [lastCheckin, setLastCheckin] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [tData, cData] = await Promise.allSettled([
+          treatmentAPI.getAll({ status: 'upcoming' }),
+          checkinAPI.getHistory(3)
+        ]);
+        if (tData.status === 'fulfilled') setTreatments(tData.value.treatments?.slice(0, 3) || []);
+        if (cData.status === 'fulfilled' && cData.value.history?.length > 0) {
+          setLastCheckin(cData.value.history[0]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const formatDate = (dt) => {
+    const d = new Date(dt);
+    if (isToday(d)) return 'Today / आज';
+    if (isTomorrow(d)) return 'Tomorrow / कल';
+    const diff = differenceInDays(d, new Date());
+    if (diff > 0 && diff <= 7) return `${diff} days / दिन में`;
+    return format(d, 'dd MMM');
+  };
+
+  const greetingTime = () => {
+    const h = new Date().getHours();
+    if (h < 12) return 'सुप्रभात 🌅';
+    if (h < 17) return 'नमस्ते 🙏';
+    return 'शुभ संध्या 🌙';
+  };
+
+  return (
+    <div className="page-container">
+      {/* Greeting */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
+        <div className="gradient-brand rounded-2xl p-5 text-white relative overflow-hidden">
+          <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
+          <div className="absolute right-8 bottom-0 w-20 h-20 bg-white/10 rounded-full translate-y-6" />
+          <p className="text-white/80 text-sm mb-1">{greetingTime()}</p>
+          <h2 className="text-2xl font-display font-bold">{user?.name}</h2>
+          <p className="text-white/80 text-sm mt-1 capitalize">{user?.role} • CareCell</p>
+          {!lastCheckin || !isToday(new Date(lastCheckin.date)) ? (
+            <button onClick={() => navigate('/checkin')}
+              className="mt-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors flex items-center gap-2 w-fit">
+              <FiSun size={14} /> आज का चेकइन करें
+            </button>
+          ) : (
+            <div className="mt-3 bg-white/20 text-white text-sm px-4 py-2 rounded-xl w-fit flex items-center gap-2">
+              ✅ आज चेकइन हो गया
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Quick Actions */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+        <h3 className="section-title mb-3">Quick Access / त्वरित पहुंच</h3>
+        <div className="grid grid-cols-4 gap-2 mb-6">
+          {quickActions.map((action, i) => {
+            const Icon = action.icon;
+            return (
+              <motion.button
+                key={action.path}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.04 }}
+                onClick={() => navigate(action.path)}
+                className={`${action.color} ${action.textColor} rounded-2xl p-3 flex flex-col items-center gap-1.5 hover:opacity-90 active:scale-95 transition-all`}
+              >
+                <Icon size={22} />
+                <span className="text-xs font-bold leading-tight text-center">{action.labelH}</span>
+              </motion.button>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      {/* Upcoming Treatments */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="section-title">Upcoming / आने वाले इलाज</h3>
+          <button onClick={() => navigate('/treatments')} className="text-brand-600 text-sm font-semibold flex items-center gap-1">
+            All <FiChevronRight size={14} />
+          </button>
+        </div>
+        {loading ? (
+          <div className="card text-center py-8 text-gray-400">Loading...</div>
+        ) : treatments.length === 0 ? (
+          <div className="card text-center py-8">
+            <FiCalendar size={32} className="mx-auto text-gray-300 mb-3" />
+            <p className="text-gray-500 text-sm">No upcoming treatments</p>
+            <button onClick={() => navigate('/treatments')} className="btn-primary mt-3 text-sm py-2">
+              Add Treatment
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {treatments.map(t => (
+              <div key={t.id || t._id} className="card flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${typeColors[t.type] || 'bg-gray-100 text-gray-700'}`}>
+                  {typeLabels[t.type] || 'T'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 truncate">{t.title}</p>
+                  <p className="text-gray-500 text-xs">{t.hospital || 'Hospital'}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-brand-600 text-sm font-bold">{formatDate(t.dateTime)}</p>
+                  <p className="text-gray-400 text-xs">{t.doctor || ''}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+
+      {/* Last Checkin Status */}
+      {lastCheckin && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-5">
+          <h3 className="section-title mb-3">Health Status / स्वास्थ्य स्थिति</h3>
+          <div className={`p-4 rounded-2xl text-white ${lastCheckin.riskLevel === 'critical' ? 'bg-red-600' : lastCheckin.riskLevel === 'high' ? 'bg-orange-500' : lastCheckin.riskLevel === 'moderate' ? 'bg-yellow-500' : 'bg-green-500'}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold text-lg capitalize">
+                  {lastCheckin.riskLevel === 'low' ? '😊 अच्छा' : lastCheckin.riskLevel === 'moderate' ? '😐 ध्यान दें' : lastCheckin.riskLevel === 'high' ? '😟 डॉक्टर से मिलें' : '🚨 अस्पताल जाएं'}
+                </p>
+                <p className="text-white/80 text-sm mt-0.5">{lastCheckin.aiAssessment}</p>
+              </div>
+              <div className="text-4xl font-bold opacity-80">{lastCheckin.wellbeing}/5</div>
+            </div>
+            {lastCheckin.riskLevel !== 'low' && (
+              <button onClick={() => navigate('/emergency')}
+                className="mt-3 bg-white/20 hover:bg-white/30 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors">
+                Emergency Help →
+              </button>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      <div className="h-4" />
+    </div>
+  );
+}
