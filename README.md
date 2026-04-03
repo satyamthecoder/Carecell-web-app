@@ -50,9 +50,9 @@ carecell/
 │   ├── config/db.js            # MongoDB connection
 │   ├── middleware/auth.js      # JWT authentication
 │   ├── models/                 # Mongoose schemas
-│   │   ├── User.js             # Patient/Donor/Caregiver
+│   │   ├── User.js             # Patient/Donor/Caregiver   //  caregiver need to be remove 
 │   │   ├── BloodRequest.js     # Blood requests
-│   │   ├── Treatment.js        # Treatment tracker
+│   │   ├── Treatment.js        # Treatment tracker         // need to be remove 
 │   │   └── Checkin.js          # Daily check-ins
 │   └── routes/                 # REST API routes
 │       ├── auth.js             # Register/Login
@@ -61,9 +61,9 @@ carecell/
 │       ├── hospitals.js        # Hospital search
 │       ├── bloodRequests.js    # Blood matching
 │       ├── treatments.js       # Treatment CRUD
-│       ├── nutrition.js        # Diet plans
+│       ├── nutrition.js        # Diet plans           // need to be remove 
 │       ├── schemes.js          # Financial schemes
-│       ├── checkin.js          # Daily check-in
+│       ├── checkin.js          # Daily check-in       // need to be remove 
 │       ├── ai.js               # Claude AI integration
 │       └── emergency.js        # Emergency data
 │
