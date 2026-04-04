@@ -190,22 +190,9 @@ router.post("/explain-term", async (req, res) => {
     }
 
     const systemPrompt = `
-You are a medical assistant.
-
-Explain clearly in Hindi and English.
-
-Rules:
-- Use simple sentences
-- Do NOT use ** or markdown
-- Use clean headings
-- Format like this:
-
-1. What is it:
-2. Causes:
-3. Symptoms:
-4. What to do:
-
-keep it clean and readable 
+     you are medical term explainer   give answers in 50 words max 
+     remembert this NEVER give medical prescriptions, diagnoses, or treatment advice
+     give answer in polite way  and smoth answers   if user ansk some question in hindi give answers in hindi 
 `;
 
     const completion = await getGroqExplanation(

@@ -1,4 +1,4 @@
-const express = require('express');
+/*const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { generateToken, protect } = require('../middleware/auth');
@@ -126,4 +126,185 @@ router.put('/profile', protect, async (req, res) => {
   }
 });
 
+module.exports = router;*/
+
+
+
+//new code for auth otp verification
+
+
+const express = require('express');
+const router = express.Router();
+const { body, validationResult } = require('express-validator');
+const { generateToken, protect } = require('../middleware/auth');
+const { generateOTP } = require('../utils/otp');
+const sendEmail = require('../utils/sendEmail');
+
+// Helper
+const handleValidation = (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
+  return null;
+};
+
+// @POST /api/auth/register
+router.post('/register', [
+  body('name').notEmpty(),
+  body('phone').notEmpty(),
+  body('password').isLength({ min: 6 }),
+], async (req, res) => {
+  try {
+    const err = handleValidation(req, res);
+    if (err) return;
+
+    const { name, phone, password, email, role = 'patient', language = 'hindi' } = req.body;
+
+    const User = require('../models/User');
+
+    const existing = await User.findOne({ phone });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'Phone already registered' });
+    }
+
+    // 🔥 Generate OTP
+    const otp = generateOTP();
+
+    const user = await User.create({
+      name,
+      phone,
+      password,
+      email,
+      role,
+      language,
+      otp,
+      otpExpire: Date.now() + 5 * 60 * 1000, // 5 min
+      isVerified: false
+    });
+
+    // 🔥 Send OTP
+    if (email) {
+      await sendEmail(email, otp);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'OTP sent. Please verify your account.',
+      email
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+
+// @POST /api/auth/verify-otp
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+
+    const User = require('../models/User');
+
+    const user = await User.findOne({ phone });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.otp !== otp || user.otpExpire < Date.now()) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+    }
+
+    // ✅ Verify user
+    user.isVerified = true;
+    user.otp = null;
+    user.otpExpire = null;
+
+    await user.save();
+
+    const token = generateToken(user._id, user.name, user.role);
+
+    res.json({
+      success: true,
+      message: 'Account verified successfully',
+      token,
+      user: user.toJSON()
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+
+// @POST /api/auth/login
+router.post('/login', [
+  body('phone').notEmpty(),
+  body('password').notEmpty()
+], async (req, res) => {
+  try {
+    const err = handleValidation(req, res);
+    if (err) return;
+
+    const { phone, password } = req.body;
+
+    const User = require('../models/User');
+
+    const user = await User.findOne({ phone }).select('+password');
+
+    if (!user || !(await user.matchPassword(password))) {
+      return res.status(401).json({ success: false, message: 'Invalid phone or password' });
+    }
+
+    // ❌ Block if not verified
+   // if (!user.isVerified) {
+     // return res.status(400).json({ success: false, message: 'Please verify OTP first' });
+    //}
+
+    user.lastLogin = new Date();
+    await user.save({ validateBeforeSave: false });
+
+    const token = generateToken(user._id, user.name, user.role);
+
+    res.json({
+      success: true,
+      token,
+      user: user.toJSON()
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+
+// @GET /api/auth/me
+router.get('/me', protect, async (req, res) => {
+  res.json({ success: true, user: req.user });
+});
+
+
+// @PUT /api/auth/profile
+router.put('/profile', protect, async (req, res) => {
+  try {
+    const { name, email, language, location } = req.body;
+
+    const User = require('../models/User');
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { name, email, language, location },
+      { new: true, runValidators: true }
+    );
+
+    res.json({ success: true, user });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;
+

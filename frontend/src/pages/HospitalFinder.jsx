@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+/*import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiMapPin, FiPhone, FiFilter, FiNavigation, FiClock, FiStar } from 'react-icons/fi';
 import { hospitalAPI } from '../utils/api';
@@ -60,7 +60,7 @@ export default function HospitalFinder() {
         <p className="text-gray-500 text-sm">नजदीकी अस्पताल खोजें</p>
       </div>
 
-      {/* Search + Filter Bar */}
+      {/* Search + Filter Bar *//*}
       <form onSubmit={handleSearch} className="flex gap-2 mb-3">
         <div className="flex-1 relative">
           <FiMapPin className="absolute left-3.5 top-3.5 text-gray-400" size={16} />
@@ -78,7 +78,7 @@ export default function HospitalFinder() {
         <button type="submit" className="btn-primary px-4 py-2.5 text-sm">Search</button>
       </form>
 
-      {/* Filter Panel */}
+      {/* Filter Panel *//*}
       <AnimatePresence>
         {showFilters && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
@@ -127,7 +127,7 @@ export default function HospitalFinder() {
         )}
       </AnimatePresence>
 
-      {/* Results */}
+      {/* Results *//*}
       {loading ? <LoadingSpinner text="Searching hospitals..." /> : (
         <>
           <p className="text-gray-500 text-sm mb-3">{hospitals.length} hospitals found</p>
@@ -167,7 +167,7 @@ export default function HospitalFinder() {
                     </span>
                   </div>
 
-                  {/* Expanded details */}
+                  {/* Expanded details *//*}
                   <AnimatePresence>
                     {selected?.id === h.id && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
@@ -205,6 +205,151 @@ export default function HospitalFinder() {
         </>
       )}
       <div className="h-4" />
+    </div>
+  );
+}
+*/
+
+
+//   with better ui and accurate finder new code 
+
+import React, { useState, useEffect } from 'react';
+import { FiMapPin, FiPhone, FiNavigation, FiSearch } from 'react-icons/fi';
+import { hospitalAPI } from '../utils/api';
+import LoadingSpinner from '../components/LoadingSpinner';
+
+export default function HospitalFinder() {
+  const [hospitals, setHospitals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [location, setLocation] = useState(null);
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+      },
+      () => console.log("Location permission denied")
+    );
+  }, []);
+
+  useEffect(() => {
+    if (location) fetchHospitals();
+  }, [location]);
+
+  const fetchHospitals = async () => {
+    setLoading(true);
+    try {
+      const data = await hospitalAPI.getHospitals({
+        lat: location.lat,
+        lng: location.lng,
+        search
+      });
+      setHospitals(data.hospitals || []);
+    } catch {
+      setHospitals([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openMaps = (h) => {
+    if (h.location?.lat && h.location?.lng) {
+      window.open(`https://www.google.com/maps?q=${h.location.lat},${h.location.lng}`, '_blank');
+    }
+  };
+
+  return (
+    <div className="p-4 min-h-screen bg-gray-50">
+
+      {/* HEADER */}
+      <div className="mb-5">
+        <h2 className="text-2xl font-bold text-gray-800">Find Hospitals</h2>
+        <p className="text-gray-500 text-sm">Nearby medical help around you</p>
+      </div>
+
+      {/* SEARCH */}
+      <div className="flex items-center gap-2 mb-4 bg-white p-2 rounded-xl shadow-sm border">
+        <FiSearch className="text-gray-400" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search hospital or city..."
+          className="flex-1 outline-none text-sm"
+        />
+        <button
+          onClick={fetchHospitals}
+          className="bg-teal-600 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-teal-700"
+        >
+          Search
+        </button>
+      </div>
+
+      {/* LOADING */}
+      {loading ? (
+        <LoadingSpinner text="Finding hospitals..." />
+      ) : (
+        <div className="space-y-4">
+
+          {hospitals.map((h) => (
+            <div
+              key={h.id}
+              className="bg-white p-4 rounded-2xl shadow-sm border hover:shadow-md transition"
+            >
+
+              {/* TOP */}
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-semibold text-gray-800">{h.name}</h3>
+                  <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                    <FiMapPin size={12} />
+                    {h.city}, {h.state}
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <p className="text-teal-600 font-bold text-sm">
+                    {h.distance?.toFixed(2)} km
+                  </p>
+                </div>
+              </div>
+
+              {/* MIDDLE */}
+              <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
+                <span>⭐ {h.rating}</span>
+                <span>{h.type === 'government' ? 'Govt' : 'Private'}</span>
+              </div>
+
+              {/* ACTIONS */}
+              <div className="flex gap-2 mt-4">
+                <a
+                  href={`tel:${h.phone}`}
+                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-2 rounded-lg text-sm"
+                >
+                  <FiPhone size={14} /> Call
+                </a>
+
+                <button
+                  onClick={() => openMaps(h)}
+                  className="flex-1 flex items-center justify-center gap-2 bg-teal-600 text-white py-2 rounded-lg text-sm"
+                >
+                  <FiNavigation size={14} /> Directions
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {hospitals.length === 0 && (
+            <div className="text-center mt-10 text-gray-400">
+              <p className="text-4xl">🏥</p>
+              <p>No hospitals found</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

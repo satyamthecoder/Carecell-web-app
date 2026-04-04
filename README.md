@@ -56,13 +56,13 @@ carecell/
 │   │   └── Checkin.js          # Daily check-ins
 │   └── routes/                 # REST API routes
 │       ├── auth.js             # Register/Login
-│       ├── patients.js         # Health card + QR
+│       ├── patients.js       mujhe karna bau     # Health card + QR
 │       ├── donors.js           # Donor profiles
 │       ├── hospitals.js        # Hospital search
 │       ├── bloodRequests.js    # Blood matching
-│       ├── treatments.js       # Treatment CRUD
+│       ├── treatments.js    owais kar rha hai     # Treatment CRUD
 │       ├── nutrition.js        # Diet plans           // need to be remove 
-│       ├── schemes.js          # Financial schemes
+│       ├── schemes.js     owais kar raha hai        # Financial schemes
 │       ├── checkin.js          # Daily check-in       // need to be remove 
 │       ├── ai.js               # Claude AI integration
 │       └── emergency.js        # Emergency data

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+/*import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -78,7 +78,7 @@ export default function Dashboard() {
 
   return (
     <div className="page-container">
-      {/* Greeting */}
+      {/* Greeting *//*}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
         <div className="gradient-brand rounded-2xl p-5 text-white relative overflow-hidden">
           <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
@@ -99,7 +99,7 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions *//*}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
         <h3 className="section-title mb-3">Quick Access / त्वरित पहुंच</h3>
         <div className="grid grid-cols-4 gap-2 mb-6">
@@ -122,7 +122,7 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Upcoming Treatments */}
+      {/* Upcoming Treatments *//*}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="section-title">Upcoming / आने वाले इलाज</h3>
@@ -161,7 +161,7 @@ export default function Dashboard() {
         )}
       </motion.div>
 
-      {/* Last Checkin Status */}
+      {/* Last Checkin Status *//*}
       {lastCheckin && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-5">
           <h3 className="section-title mb-3">Health Status / स्वास्थ्य स्थिति</h3>
@@ -184,6 +184,154 @@ export default function Dashboard() {
           </div>
         </motion.div>
       )}
+
+      <div className="h-4" />
+    </div>
+  );
+}*/
+
+
+
+//new  code for dashbord with remove checkin option 
+
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import {
+  FiHeart, FiAlertTriangle, FiDroplet, FiMapPin,
+  FiCalendar, FiBookOpen, FiDollarSign,
+  FiChevronRight
+} from 'react-icons/fi';
+import useAuthStore from '../context/authStore';
+import { treatmentAPI } from '../utils/api';
+import { format, isToday, isTomorrow, differenceInDays } from 'date-fns';
+
+// ✅ UPDATED ACTIONS (removed nutrition)
+const quickActions = [
+  { path: '/emergency', icon: FiAlertTriangle, label: 'Emergency', color: 'bg-red-500 text-white' },
+  { path: '/health-card', icon: FiHeart, label: 'Card', color: 'bg-indigo-100 text-indigo-700' },
+  { path: '/blood-request', icon: FiDroplet, label: 'Blood', color: 'bg-pink-100 text-pink-700' },
+  { path: '/hospitals', icon: FiMapPin, label: 'Hospitals', color: 'bg-blue-100 text-blue-700' },
+  { path: '/explain', icon: FiBookOpen, label: 'AI', color: 'bg-purple-100 text-purple-700' },
+  { path: '/schemes', icon: FiDollarSign, label: 'Schemes', color: 'bg-yellow-100 text-yellow-700' },
+];
+
+export default function Dashboard() {
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const [treatments, setTreatments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const tData = await treatmentAPI.getAll({ status: 'upcoming' });
+        setTreatments(tData.treatments?.slice(0, 3) || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const formatDate = (dt) => {
+    const d = new Date(dt);
+    if (isToday(d)) return 'Today';
+    if (isTomorrow(d)) return 'Tomorrow';
+    const diff = differenceInDays(d, new Date());
+    if (diff > 0 && diff <= 7) return `${diff} days`;
+    return format(d, 'dd MMM');
+  };
+
+  return (
+    <div className="page-container">
+
+      {/* 🔥 HEADER */}
+      <motion.div className="mb-5">
+        <div className="bg-gradient-to-r from-indigo-500 to-teal-400 rounded-3xl p-5 text-white shadow">
+          <h2 className="text-xl font-bold">{user?.name}</h2>
+          <p className="text-sm opacity-80 capitalize">{user?.role}</p>
+        </div>
+      </motion.div>
+
+      {/* 💰 SCHEMES (MOVED UP) */}
+      <div className="mb-5">
+        <div className="bg-yellow-50 p-4 rounded-2xl shadow">
+          <div className="flex justify-between">
+            <h3 className="font-bold">Schemes</h3>
+            <button onClick={() => navigate('/schemes')}>
+              <FiChevronRight />
+            </button>
+          </div>
+          <button
+            onClick={() => navigate('/schemes')}
+            className="mt-3 w-full bg-blue-500 text-white py-2 rounded-xl"
+          >
+            Explore
+          </button>
+        </div>
+      </div>
+
+      {/* ⚡ QUICK ACTIONS */}
+      <div className="mb-5">
+        <h3 className="font-bold mb-3">Quick Access</h3>
+        <div className="grid grid-cols-3 gap-3">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <button
+                key={action.path}
+                onClick={() => navigate(action.path)}
+                className={`${action.color} p-4 rounded-2xl flex flex-col items-center`}
+              >
+                <Icon size={20} />
+                <span className="text-xs mt-1 font-semibold">{action.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 📅 TREATMENTS */}
+      <div>
+        <div className="flex justify-between mb-2">
+          <h3 className="font-bold">Treatments</h3>
+          <button onClick={() => navigate('/treatments')}>
+            <FiChevronRight />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="bg-white p-4 rounded-xl shadow text-center">
+            Loading...
+          </div>
+        ) : treatments.length === 0 ? (
+          <div className="bg-white p-4 rounded-xl shadow text-center">
+            <FiCalendar className="mx-auto mb-2" />
+            <p>No treatments</p>
+            <button
+              onClick={() => navigate('/treatments')}
+              className="mt-2 bg-blue-500 text-white px-4 py-1 rounded"
+            >
+              Add
+            </button>
+          </div>
+        ) : (
+          treatments.map((t) => (
+            <div key={t._id} className="bg-white p-3 rounded-xl shadow mb-2 flex justify-between">
+              <div>
+                <p className="font-semibold">{t.title}</p>
+                <p className="text-xs text-gray-500">{t.hospital}</p>
+              </div>
+              <span className="text-blue-600 text-sm">
+                {formatDate(t.dateTime)}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
 
       <div className="h-4" />
     </div>

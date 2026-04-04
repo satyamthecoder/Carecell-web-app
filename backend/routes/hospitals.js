@@ -1,4 +1,4 @@
-const express = require('express');
+/*const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 
@@ -135,6 +135,105 @@ router.get('/emergency/nearest', async (req, res) => {
     res.json({ success: true, nearest });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+module.exports = router;*/
+
+
+//new code with better expireance
+
+const express = require('express');
+const router = express.Router();
+const Hospital = require('../models/Hospital');
+
+// ✅ HAVERSINE FORMULA (ACCURATE DISTANCE)
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth radius in KM
+
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
+
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+// 👉 GET HOSPITALS
+router.get('/', async (req, res) => {
+  try {
+    const { lat, lng, radius = 50, search = '' } = req.query;
+
+    // ❌ VALIDATION
+    if (!lat || !lng) {
+      return res.status(400).json({
+        success: false,
+        message: "Location (lat, lng) is required"
+      });
+    }
+
+    const userLat = parseFloat(lat);
+    const userLng = parseFloat(lng);
+    const maxRadius = parseFloat(radius);
+
+    // 📦 FETCH ALL HOSPITALS
+    let hospitals = await Hospital.find();
+
+    // 🔍 SEARCH FILTER
+    if (search) {
+      const searchText = search.toLowerCase();
+
+      hospitals = hospitals.filter(h =>
+        (h.name && h.name.toLowerCase().includes(searchText)) ||
+        (h.city && h.city.toLowerCase().includes(searchText))
+      );
+    }
+
+    // 📏 DISTANCE CALCULATION + SAFE CHECK
+    let result = hospitals
+      .filter(h =>
+        h.location &&
+        typeof h.location.lat === 'number' &&
+        typeof h.location.lng === 'number'
+      )
+      .map(h => {
+        const distance = getDistance(
+          userLat,
+          userLng,
+          h.location.lat,
+          h.location.lng
+        );
+
+        return {
+          ...h._doc,
+          distance: Number(distance.toFixed(2)) // clean distance
+        };
+      });
+
+    // 📍 FILTER BY RADIUS
+    result = result.filter(h => h.distance <= maxRadius);
+
+    // 🔽 SORT BY NEAREST
+    result.sort((a, b) => a.distance - b.distance);
+
+    // ✅ RESPONSE
+    res.json({
+      success: true,
+      count: result.length,
+      hospitals: result
+    });
+
+  } catch (error) {
+    console.error("HOSPITAL ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching hospitals"
+    });
   }
 });
 
