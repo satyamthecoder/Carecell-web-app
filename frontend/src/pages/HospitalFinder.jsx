@@ -212,7 +212,7 @@ export default function HospitalFinder() {
 
 
 //   with better ui and accurate finder new code 
-
+/*
 import React, { useState, useEffect } from 'react';
 import { FiMapPin, FiPhone, FiNavigation, FiSearch } from 'react-icons/fi';
 import { hospitalAPI } from '../utils/api';
@@ -265,13 +265,13 @@ export default function HospitalFinder() {
   return (
     <div className="p-4 min-h-screen bg-gray-50">
 
-      {/* HEADER */}
+      {/* HEADER *//*}
       <div className="mb-5">
         <h2 className="text-2xl font-bold text-gray-800">Find Hospitals</h2>
         <p className="text-gray-500 text-sm">Nearby medical help around you</p>
       </div>
 
-      {/* SEARCH */}
+      {/* SEARCH *//*}
       <div className="flex items-center gap-2 mb-4 bg-white p-2 rounded-xl shadow-sm border">
         <FiSearch className="text-gray-400" />
         <input
@@ -288,7 +288,7 @@ export default function HospitalFinder() {
         </button>
       </div>
 
-      {/* LOADING */}
+      {/* LOADING *//*}
       {loading ? (
         <LoadingSpinner text="Finding hospitals..." />
       ) : (
@@ -300,7 +300,7 @@ export default function HospitalFinder() {
               className="bg-white p-4 rounded-2xl shadow-sm border hover:shadow-md transition"
             >
 
-              {/* TOP */}
+              {/* TOP *//*}
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-semibold text-gray-800">{h.name}</h3>
@@ -317,13 +317,13 @@ export default function HospitalFinder() {
                 </div>
               </div>
 
-              {/* MIDDLE */}
+              {/* MIDDLE *//*}
               <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
                 <span>⭐ {h.rating}</span>
                 <span>{h.type === 'government' ? 'Govt' : 'Private'}</span>
               </div>
 
-              {/* ACTIONS */}
+              {/* ACTIONS *//*}
               <div className="flex gap-2 mt-4">
                 <a
                   href={`tel:${h.phone}`}
@@ -352,4 +352,171 @@ export default function HospitalFinder() {
       )}
     </div>
   );
-}
+}*/     
+ // this code working 
+
+///2nd improvements 
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiMapPin, FiPhone, FiFilter, FiNavigation, FiClock, FiStar } from 'react-icons/fi';
+import { hospitalAPI } from '../utils/api';
+import LoadingSpinner from '../components/LoadingSpinner';
+
+const typeOpts = [
+  { value: 'all', label: 'All / सभी' },
+  { value: 'government', label: 'Govt / सरकारी' },
+  { value: 'private', label: 'Private / निजी' },
+];
+
+const costOpts = [
+  { value: 'all', label: 'Any Cost' },
+  { value: 'low', label: '💚 Low' },
+  { value: 'medium', label: '🟡 Medium' },
+  { value: 'high', label: '🔴 High' },
+];
+
+const radiusOpts = [5, 10, 25, 50];
+
+export default function HospitalFinder() {
+  const [hospitals, setHospitals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState({ type: 'all', costLevel: 'all', radius: 50, opdToday: false });
+  const [showFilters, setShowFilters] = useState(false);
+  const [selected, setSelected] = useState(null);
+
+  const [location, setLocation] = useState(null);
+
+  // 🔥 GET USER LOCATION
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+      },
+      (err) => {
+        console.error("Location error:", err);
+      }
+    );
+  }, []);
+
+  useEffect(() => {
+    if (location) fetchHospitals();
+  }, [filters, location]);
+
+  const fetchHospitals = async () => {
+    setLoading(true);
+    try {
+      const params = {
+        ...filters,
+        lat: location?.lat,
+        lng: location?.lng,
+      };
+
+      if (search) params.search = search;
+
+      const data = await hospitalAPI.getHospitals(params);
+      setHospitals(data.hospitals || []);
+    } catch (err) {
+      console.error(err);
+      setHospitals([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    fetchHospitals();
+  };
+
+  const openMaps = (h) => {
+    if (h.location?.lat && h.location?.lng) {
+      window.open(`https://www.google.com/maps?q=${h.location.lat},${h.location.lng}`, '_blank');
+    } else {
+      const q = encodeURIComponent(`${h.name}, ${h.address}`);
+      window.open(`https://maps.google.com/?q=${q}`, '_blank');
+    }
+  };
+
+  const costColor = {
+    low: 'text-green-600 bg-green-100',
+    medium: 'text-yellow-700 bg-yellow-100',
+    high: 'text-red-600 bg-red-100'
+  };
+
+  const costLabel = {
+    low: 'Low Cost',
+    medium: 'Medium',
+    high: 'High'
+  };
+
+  return (
+    <div className="page-container">
+      <div className="mb-4">
+        <h2 className="section-title">Hospital Finder</h2>
+        <p className="text-gray-500 text-sm">नजदीकी अस्पताल खोजें</p>
+      </div>
+
+      <form onSubmit={handleSearch} className="flex gap-2 mb-3">
+        <div className="flex-1 relative">
+          <FiMapPin className="absolute left-3.5 top-3.5 text-gray-400" size={16} />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search city, hospital..."
+            className="input-field pl-9 text-sm py-2.5"
+          />
+        </div>
+
+        <button type="button" onClick={() => setShowFilters(!showFilters)}
+          className="px-4 py-2.5 rounded-xl border text-sm flex items-center gap-2">
+          <FiFilter size={15} /> Filters
+        </button>
+
+        <button type="submit" className="btn-primary px-4 py-2.5 text-sm">
+          Search
+        </button>
+      </form>
+
+      {loading ? <LoadingSpinner text="Finding nearest hospitals..." /> : (
+        <>
+          <p className="text-gray-500 text-sm mb-3">
+            {hospitals.length} hospitals found
+          </p>
+
+          <div className="space-y-3">
+            {hospitals.map((h) => (
+              <div key={h.id} className="card">
+                <h4 className="font-bold">{h.name}</h4>
+
+                <p className="text-sm text-gray-500">
+                  {h.city}, {h.state}
+                </p>
+
+                <p className="text-sm font-semibold text-blue-600">
+                  📍 {h.distance?.toFixed(2)} km away
+                </p>
+
+                <div className="flex gap-2 mt-2">
+                  <a href={`tel:${h.phone}`} className="btn-primary text-sm px-3 py-1">
+                    Call
+                  </a>
+
+                  <button onClick={() => openMaps(h)} className="btn-teal text-sm px-3 py-1">
+                    Directions
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+} 
+
+
+// this code working above 

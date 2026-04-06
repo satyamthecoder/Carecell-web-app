@@ -206,7 +206,6 @@ import useAuthStore from '../context/authStore';
 import { treatmentAPI } from '../utils/api';
 import { format, isToday, isTomorrow, differenceInDays } from 'date-fns';
 
-// ✅ UPDATED ACTIONS (removed nutrition)
 const quickActions = [
   { path: '/emergency', icon: FiAlertTriangle, label: 'Emergency', color: 'bg-red-500 text-white' },
   { path: '/health-card', icon: FiHeart, label: 'Card', color: 'bg-indigo-100 text-indigo-700' },
@@ -219,8 +218,28 @@ const quickActions = [
 export default function Dashboard() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+
   const [treatments, setTreatments] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ✅ NEW STATE
+  const [hospitals, setHospitals] = useState([]);
+
+  // ✅ FETCH HOSPITALS
+  const fetchHospitals = async (lat, lng) => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/hospitals/nearby?lat=${lat}&lng=${lng}`
+      );
+
+      const data = await res.json();
+      console.log("Hospitals:", data);
+
+      setHospitals(data);
+    } catch (err) {
+      console.error("Error fetching hospitals:", err);
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -233,7 +252,22 @@ export default function Dashboard() {
         setLoading(false);
       }
     };
+
     loadData();
+
+    // ✅ GET LOCATION + FETCH HOSPITALS
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        fetchHospitals(lat, lng);
+      },
+      () => {
+        // fallback (Mumbai)
+        fetchHospitals(19.076, 72.8777);
+      }
+    );
+
   }, []);
 
   const formatDate = (dt) => {
@@ -248,7 +282,7 @@ export default function Dashboard() {
   return (
     <div className="page-container">
 
-      {/* 🔥 HEADER */}
+      {/* HEADER */}
       <motion.div className="mb-5">
         <div className="bg-gradient-to-r from-indigo-500 to-teal-400 rounded-3xl p-5 text-white shadow">
           <h2 className="text-xl font-bold">{user?.name}</h2>
@@ -256,7 +290,7 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* 💰 SCHEMES (MOVED UP) */}
+      {/* SCHEMES */}
       <div className="mb-5">
         <div className="bg-yellow-50 p-4 rounded-2xl shadow">
           <div className="flex justify-between">
@@ -274,7 +308,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ⚡ QUICK ACTIONS */}
+      {/* QUICK ACTIONS */}
       <div className="mb-5">
         <h3 className="font-bold mb-3">Quick Access</h3>
         <div className="grid grid-cols-3 gap-3">
@@ -294,7 +328,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 📅 TREATMENTS */}
+      {/* TREATMENTS */}
       <div>
         <div className="flex justify-between mb-2">
           <h3 className="font-bold">Treatments</h3>
@@ -311,12 +345,6 @@ export default function Dashboard() {
           <div className="bg-white p-4 rounded-xl shadow text-center">
             <FiCalendar className="mx-auto mb-2" />
             <p>No treatments</p>
-            <button
-              onClick={() => navigate('/treatments')}
-              className="mt-2 bg-blue-500 text-white px-4 py-1 rounded"
-            >
-              Add
-            </button>
           </div>
         ) : (
           treatments.map((t) => (
@@ -328,6 +356,31 @@ export default function Dashboard() {
               <span className="text-blue-600 text-sm">
                 {formatDate(t.dateTime)}
               </span>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* 🏥 HOSPITALS */}
+      <div className="mt-5">
+        <div className="flex justify-between mb-2">
+          <h3 className="font-bold">Nearby Hospitals</h3>
+          <button onClick={() => navigate('/hospitals')}>
+            <FiChevronRight />
+          </button>
+        </div>
+
+        {hospitals.length === 0 ? (
+          <div className="bg-white p-4 rounded-xl shadow text-center">
+            Loading hospitals...
+          </div>
+        ) : (
+          hospitals.slice(0, 3).map((h, i) => (
+            <div key={i} className="bg-white p-3 rounded-xl shadow mb-2">
+              <p className="font-semibold">{h.name}</p>
+              <p className="text-xs text-gray-500">
+                {h.address || "No address"}
+              </p>
             </div>
           ))
         )}

@@ -55,11 +55,21 @@ export const donorAPI = {
 };
 
 // Hospitals
-export const hospitalAPI = {
-  getHospitals: (params) => api.get('/hospitals', { params }),
+//export const hospitalAPI = {
+  //getHospitals: (params) => api.get('/hospitals', { params }),
+  //getHospital: (id) => api.get(`/hospitals/${id}`),
+  //getNearestEmergency: (lat, lng) => api.get('/hospitals/emergency/nearest', { params: { lat, lng } }),
+//};  
+
+ export const hospitalAPI = {
+  getHospitals: (params) =>
+    api.get('/hospitals/nearby', { params }), 
+
   getHospital: (id) => api.get(`/hospitals/${id}`),
-  getNearestEmergency: (lat, lng) => api.get('/hospitals/emergency/nearest', { params: { lat, lng } }),
-};
+
+  getNearestEmergency: (lat, lng) =>
+    api.get('/hospitals/emergency/nearest', { params: { lat, lng } }),
+}; 
 
 // Blood Requests
 export const bloodAPI = {
