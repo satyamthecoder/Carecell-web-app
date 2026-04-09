@@ -90,8 +90,6 @@ module.exports = mongoose.model('User', userSchema);*/
 
 
 //new  code with otp 
-
-
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -211,3 +209,7 @@ userSchema.methods.toJSON = function() {
 };
 
 module.exports = mongoose.model('User', userSchema);
+
+
+
+

@@ -4,7 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import useAuthStore from './context/authStore';
 import Layout from './components/Layout';
 import LoadingSpinner from './components/LoadingSpinner';
-
+/*this code for request */import RequestHelp from './pages/RequestHelp';
+import AdminDonations from './pages/AdminDonations';
 // Lazy-loaded pages
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
@@ -64,6 +65,8 @@ function App() {
             <Route path="schemes" element={<Schemes />} />
             <Route path="checkin" element={<DailyCheckin />} />
             <Route path="profile" element={<Profile />} />
+           /*this line for rquest form*/ <Route path="/request-help" element={<RequestHelp />} />
+           <Route path="/admin-donations" element={<AdminDonations />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

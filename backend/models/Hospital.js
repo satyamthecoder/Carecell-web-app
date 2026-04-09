@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
+//*const mongoose = require('mongoose');
 
-const hospitalSchema = new mongoose.Schema({
+/*const hospitalSchema = new mongoose.Schema({
   name: { type: String, required: true },
   city: String,
   state: String,
@@ -14,7 +14,72 @@ const hospitalSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+module.exports = mongoose.model('Hospital', hospitalSchema);*/
+
+//new code
+const mongoose = require('mongoose');
+
+const hospitalSchema = new mongoose.Schema({
+  name: { 
+    type: String, 
+    required: true,
+    trim: true,
+    index: true
+  },
+
+  city: { 
+    type: String,
+    trim: true,
+    index: true
+  },
+
+  state: { 
+    type: String,
+    trim: true,
+    index: true
+  },
+
+  address: { 
+    type: String,
+    trim: true
+  },
+
+  phone: { 
+    type: String,
+    default: ""
+  },
+
+  type: { 
+    type: String,
+    default: "General"
+  },
+
+  rating: { 
+    type: Number,
+    default: 0
+  },
+
+  location: {
+    lat: { type: Number },
+    lng: { type: Number }
+  }
+
+}, { timestamps: true });
+
+
+// 🔥 TEXT SEARCH INDEX (MAIN UPGRADE)
+hospitalSchema.index({
+  name: "text",
+  city: "text",
+  address: "text"
+});
+
+// 🔥 COMPOUND INDEX (FILTER SPEED)
+hospitalSchema.index({ city: 1, state: 1 });
+
+
 module.exports = mongoose.model('Hospital', hospitalSchema);
+
 
 //above code working try new thing
 

@@ -194,7 +194,7 @@ export default function Dashboard() {
 
 //new  code for dashbord with remove checkin option 
 
-import React, { useEffect, useState } from 'react';
+/*import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -282,7 +282,7 @@ export default function Dashboard() {
   return (
     <div className="page-container">
 
-      {/* HEADER */}
+  //   {/* HEADER *//*}
       <motion.div className="mb-5">
         <div className="bg-gradient-to-r from-indigo-500 to-teal-400 rounded-3xl p-5 text-white shadow">
           <h2 className="text-xl font-bold">{user?.name}</h2>
@@ -290,7 +290,7 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* SCHEMES */}
+  //    {/* SCHEMES *//*}
       <div className="mb-5">
         <div className="bg-yellow-50 p-4 rounded-2xl shadow">
           <div className="flex justify-between">
@@ -308,7 +308,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* QUICK ACTIONS */}
+  //    {/* QUICK ACTIONS *//*}
       <div className="mb-5">
         <h3 className="font-bold mb-3">Quick Access</h3>
         <div className="grid grid-cols-3 gap-3">
@@ -328,7 +328,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* TREATMENTS */}
+   //   {/* TREATMENTS *//*}
       <div>
         <div className="flex justify-between mb-2">
           <h3 className="font-bold">Treatments</h3>
@@ -361,7 +361,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* 🏥 HOSPITALS */}
+  //    {/* 🏥 HOSPITALS *//*}
       <div className="mt-5">
         <div className="flex justify-between mb-2">
           <h3 className="font-bold">Nearby Hospitals</h3>
@@ -388,5 +388,246 @@ export default function Dashboard() {
 
       <div className="h-4" />
     </div>
+  );
+}*/
+
+
+//new code with logo and branding
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import {
+  FiHeart, FiAlertTriangle, FiDroplet, FiMapPin,
+  FiCalendar, FiBookOpen, FiDollarSign,
+  FiChevronRight
+} from 'react-icons/fi';
+import useAuthStore from '../context/authStore';
+import { treatmentAPI } from '../utils/api';
+import { format, isToday, isTomorrow, differenceInDays } from 'date-fns';
+
+import logo from '../assets/logo.png';
+
+const quickActions = [
+  { path: '/emergency', icon: FiAlertTriangle, label: 'Emergency' },
+  { path: '/health-card', icon: FiHeart, label: 'Card' },
+  { path: '/blood-request', icon: FiDroplet, label: 'Blood' },
+  { path: '/hospitals', icon: FiMapPin, label: 'Hospitals' },
+  { path: '/explain', icon: FiBookOpen, label: 'AI' },
+  { path: '/schemes', icon: FiDollarSign, label: 'Schemes' },
+  { path: '/request-help', icon: FiHeart, label: 'Help' },
+];
+
+export default function Dashboard() {
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+
+  const [treatments, setTreatments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [hospitals, setHospitals] = useState([]);
+
+  const fetchHospitals = async (lat, lng) => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/hospitals/nearby?lat=${lat}&lng=${lng}`
+      );
+      const data = await res.json();
+      setHospitals(Array.isArray(data) ? data : data?.hospitals || []);
+    } catch (err) {
+      console.error(err);
+      setHospitals([]);
+    }
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const tData = await treatmentAPI.getAll({ status: 'upcoming' });
+        setTreatments(tData.treatments?.slice(0, 3) || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => fetchHospitals(pos.coords.latitude, pos.coords.longitude),
+      () => fetchHospitals(19.076, 72.8777)
+    );
+  }, []);
+
+  const formatDate = (dt) => {
+    const d = new Date(dt);
+    if (isToday(d)) return 'Today';
+    if (isTomorrow(d)) return 'Tomorrow';
+    const diff = differenceInDays(d, new Date());
+    if (diff > 0 && diff <= 7) return `${diff} days`;
+    return format(d, 'dd MMM');
+  };
+
+  return (
+    <motion.div
+      className="relative min-h-screen p-4 pb-24"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+
+      {/* 🔥 BACKGROUND */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `url('/src/assets/bg.png')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
+      <div className="absolute inset-0 bg-white/70 backdrop-blur-xl" />
+
+      <div className="relative z-10 space-y-6">
+
+        {/* HEADER */}
+        <div className="flex items-center gap-3">
+          <img src={logo} alt="CareCell" className="w-10 h-10 rounded-lg shadow" />
+          <h1 className="text-xl font-bold text-gray-800">CareCell</h1>
+        </div>
+
+        {/* HERO CARD */}
+        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+          <div className="rounded-3xl p-5 text-white shadow-lg bg-gradient-to-br from-teal-500 to-blue-600 relative overflow-hidden">
+            <div className="absolute right-0 top-0 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+
+            <h2 className="text-lg font-semibold">Hello, {user?.name} 👋</h2>
+            <p className="text-sm opacity-80 capitalize">{user?.role}</p>
+          </div>
+        </motion.div>
+
+        {/* QUICK ACTIONS */}
+        <div>
+          <h3 className="font-semibold mb-3 text-gray-700">Quick Access</h3>
+
+          <div className="grid grid-cols-3 gap-3">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <motion.button
+                  key={action.path}
+                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.05 }}
+                  onClick={() => navigate(action.path)}
+                  className="p-4 rounded-2xl flex flex-col items-center shadow-md backdrop-blur bg-white/70"
+                >
+                  <Icon size={20} />
+                  <span className="text-xs mt-1">{action.label}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* TREATMENTS */}
+        <div className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-md">
+          <div className="flex justify-between mb-3">
+            <h3 className="font-semibold text-gray-700">Treatments</h3>
+            <motion.button whileTap={{ scale: 0.8 }} onClick={() => navigate('/treatments')}>
+              <FiChevronRight />
+            </motion.button>
+          </div>
+
+          {loading ? (
+            <div className="text-center text-gray-500">Loading...</div>
+          ) : treatments.length === 0 ? (
+            <div className="text-center text-gray-500">
+              <FiCalendar className="mx-auto mb-2" />
+              No treatments
+            </div>
+          ) : (
+            treatments.map((t, i) => (
+              <motion.div
+                key={t._id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="border rounded-xl p-3 mb-2 flex justify-between"
+              >
+                <div>
+                  <p className="font-medium">{t.title}</p>
+                  <p className="text-xs text-gray-500">{t.hospital}</p>
+                </div>
+                <span className="text-blue-600 text-sm">
+                  {formatDate(t.dateTime)}
+                </span>
+              </motion.div>
+            ))
+          )}
+        </div>
+
+        {/* HOSPITALS */}
+        <div className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-md">
+          <div className="flex justify-between mb-3">
+            <h3 className="font-semibold text-gray-700">Nearby Hospitals</h3>
+            <motion.button whileTap={{ scale: 0.8 }} onClick={() => navigate('/hospitals')}>
+              <FiChevronRight />
+            </motion.button>
+          </div>
+
+          {hospitals.length === 0 ? (
+            <div className="text-center text-gray-500">No hospitals found</div>
+          ) : (
+            hospitals.slice(0, 3).map((h, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="border rounded-xl p-3 mb-2"
+              >
+                <p className="font-medium">{h.name}</p>
+                <p className="text-xs text-gray-500">
+                  {h.address || "No address"}
+                </p>
+              </motion.div>
+            ))
+          )}
+        </div>
+
+      </div>
+
+      {/* 🔥 FLOATING BUTTON */}
+      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50">
+        <motion.button
+          whileTap={{ scale: 0.85 }}
+          className="w-16 h-16 rounded-full bg-red-500 text-white shadow-2xl flex items-center justify-center text-2xl"
+          onClick={() => navigate('/emergency')}
+        >
+          ⚠️
+        </motion.button>
+      </div>
+
+      {/* 🔥 BOTTOM NAV */}
+      <div className="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur border-t flex justify-around py-2 z-40">
+        <button onClick={() => navigate('/')} className="text-blue-600 text-xs flex flex-col items-center">
+          🏠
+          Home
+        </button>
+
+        <button onClick={() => navigate('/schemes')} className="text-gray-500 text-xs flex flex-col items-center">
+          💰
+          Schemes
+        </button>
+
+        <button onClick={() => navigate('/treatments')} className="text-gray-500 text-xs flex flex-col items-center">
+          📅
+          Care
+        </button>
+
+        <button onClick={() => navigate('/profile')} className="text-gray-500 text-xs flex flex-col items-center">
+          👤
+          Profile
+        </button>
+      </div>
+
+    </motion.div>
   );
 }

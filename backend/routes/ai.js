@@ -192,7 +192,7 @@ router.post("/explain-term", async (req, res) => {
     const systemPrompt = `
      you are medical term explainer   give answers in 50 words max 
      remembert this NEVER give medical prescriptions, diagnoses, or treatment advice
-     give answer in polite way  and smoth answers   if user ansk some question in hindi give answers in hindi 
+     give answer in polite way  and smoth answers   if user ansk some question in hindi give answers in hindi  words 
 `;
 
     const completion = await getGroqExplanation(

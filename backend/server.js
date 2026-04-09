@@ -67,6 +67,15 @@ app.get('/api/health', (req, res) => {
 });
 
 // API Routes
+// above 2 for sceme and donation 
+app.use('/api/schemes', require('./routes/schemes'));
+//import schemeRoutes from './routes/schemes.js';
+//app.use('/api/schemes', schemeRoutes);
+
+
+app.use("/api/healthcard", require("./routes/healthcard"));
+//above 1 is for health card
+app.use('/api/donations', require('./routes/donations'));
 app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/patients', require('./routes/patients'));
 app.use('/api/donors', require('./routes/donors'));
@@ -74,7 +83,7 @@ app.use('/api/hospitals', require('./routes/hospitals'));
 app.use('/api/blood-requests', require('./routes/bloodRequests'));
 app.use('/api/treatments', require('./routes/treatments'));
 //app.use('/api/nutrition', require('./routes/nutrition'));
-app.use('/api/schemes', require('./routes/schemes'));
+//app.use('/api/schemes', require('./routes/schemes'));
 //app.use('/api/checkin', require('./routes/checkin'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/emergency', require('./routes/emergency'));

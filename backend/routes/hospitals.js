@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const Hospital = require('../models/Hospital');
 
-// ✅ HAVERSINE (ACCURATE)
+// ✅ HAVERSINE (UNCHANGED)
 function getDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
 
@@ -23,7 +23,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// ✅ FIXED ROUTE → /nearby
+// ✅ /nearby ROUTE
 router.get('/nearby', async (req, res) => {
   try {
     let { lat, lng, radius = 50, search = '' } = req.query;
@@ -47,19 +47,31 @@ router.get('/nearby', async (req, res) => {
       });
     }
 
-    // 📦 FETCH DATA
-    let hospitals = await Hospital.find();
+    // 🔥 BUILD QUERY (MOVE SEARCH TO DB)
+    let query = {};
 
-    // 🔍 SEARCH
-    if (search) {
-      const s = search.toLowerCase();
-      hospitals = hospitals.filter(h =>
-        (h.name && h.name.toLowerCase().includes(s)) ||
-        (h.city && h.city.toLowerCase().includes(s))
-      );
+    if (search && search.trim() !== "") {
+      const keyword = search.trim();
+
+      query.$or = [
+        { name: { $regex: keyword, $options: "i" } },
+        { city: { $regex: keyword, $options: "i" } },
+        { address: { $regex: keyword, $options: "i" } }
+      ];
     }
 
-    // 📏 DISTANCE CALC
+    // 📦 FETCH ONLY NEEDED DATA (FASTER)
+    //let hospitals = await Hospital.find(query)
+      //.select("name city state address location")
+      //.limit(15) // 🚀 LIMIT
+      //.lean();   // 🚀 SPEED BOOST
+let hospitals = await Hospital.find(query)
+  .select("name city state address location")
+  .limit(search ? 50 : 500)
+  .lean();
+
+
+    // 📏 DISTANCE CALC (UNCHANGED LOGIC)
     const result = hospitals
       .filter(h => h.location?.lat && h.location?.lng)
       .map(h => {
@@ -82,7 +94,7 @@ router.get('/nearby', async (req, res) => {
       .filter(h => h.distance <= radius)
       .sort((a, b) => a.distance - b.distance);
 
-    // ✅ RESPONSE
+    // ✅ RESPONSE (UNCHANGED)
     res.json({
       success: true,
       count: result.length,
@@ -99,6 +111,3 @@ router.get('/nearby', async (req, res) => {
 });
 
 module.exports = router;
-
-//above code working try new thing
-

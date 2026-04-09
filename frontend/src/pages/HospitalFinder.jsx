@@ -356,38 +356,23 @@ export default function HospitalFinder() {
  // this code working 
 
 ///2nd improvements 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiMapPin, FiPhone, FiFilter, FiNavigation, FiClock, FiStar } from 'react-icons/fi';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import {
+  FiMapPin, FiFilter, FiNavigation, FiStar
+} from 'react-icons/fi';
 import { hospitalAPI } from '../utils/api';
 import LoadingSpinner from '../components/LoadingSpinner';
-
-const typeOpts = [
-  { value: 'all', label: 'All / सभी' },
-  { value: 'government', label: 'Govt / सरकारी' },
-  { value: 'private', label: 'Private / निजी' },
-];
-
-const costOpts = [
-  { value: 'all', label: 'Any Cost' },
-  { value: 'low', label: '💚 Low' },
-  { value: 'medium', label: '🟡 Medium' },
-  { value: 'high', label: '🔴 High' },
-];
-
-const radiusOpts = [5, 10, 25, 50];
 
 export default function HospitalFinder() {
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState({ type: 'all', costLevel: 'all', radius: 50, opdToday: false });
-  const [showFilters, setShowFilters] = useState(false);
-  const [selected, setSelected] = useState(null);
-
   const [location, setLocation] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(10);
+  const cache = useRef({});
 
-  // 🔥 GET USER LOCATION
+  // 📍 LOCATION
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -396,29 +381,50 @@ export default function HospitalFinder() {
           lng: pos.coords.longitude,
         });
       },
-      (err) => {
-        console.error("Location error:", err);
+      () => {
+        setLocation({ lat: 19.076, lng: 72.8777 });
       }
     );
   }, []);
 
+  // 🔥 SEARCH DEBOUNCE
   useEffect(() => {
-    if (location) fetchHospitals();
-  }, [filters, location]);
+    if (!location) return;
 
+    const delay = setTimeout(() => {
+      fetchHospitals();
+    }, 400);
+
+    return () => clearTimeout(delay);
+  }, [search, location]);
+
+  // 🔥 FETCH
   const fetchHospitals = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
+
+      // ✅ CACHE
+      if (cache.current[search]) {
+        setHospitals(cache.current[search]);
+        setVisibleCount(10); // 🔥 RESET
+        setLoading(false);
+        return;
+      }
+
       const params = {
-        ...filters,
-        lat: location?.lat,
-        lng: location?.lng,
+        lat: location.lat,
+        lng: location.lng,
+        search
       };
 
-      if (search) params.search = search;
-
       const data = await hospitalAPI.getHospitals(params);
-      setHospitals(data.hospitals || []);
+      const result = data.hospitals || [];
+
+      cache.current[search] = result;
+
+      setHospitals(result);
+      setVisibleCount(10); // 🔥 RESET AFTER FETCH
+
     } catch (err) {
       console.error(err);
       setHospitals([]);
@@ -427,96 +433,136 @@ export default function HospitalFinder() {
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    fetchHospitals();
-  };
-
   const openMaps = (h) => {
-    if (h.location?.lat && h.location?.lng) {
-      window.open(`https://www.google.com/maps?q=${h.location.lat},${h.location.lng}`, '_blank');
-    } else {
-      const q = encodeURIComponent(`${h.name}, ${h.address}`);
-      window.open(`https://maps.google.com/?q=${q}`, '_blank');
-    }
-  };
-
-  const costColor = {
-    low: 'text-green-600 bg-green-100',
-    medium: 'text-yellow-700 bg-yellow-100',
-    high: 'text-red-600 bg-red-100'
-  };
-
-  const costLabel = {
-    low: 'Low Cost',
-    medium: 'Medium',
-    high: 'High'
+    const q = encodeURIComponent(`${h.name}, ${h.address}`);
+    window.open(`https://maps.google.com/?q=${q}`, '_blank');
   };
 
   return (
-    <div className="page-container">
-      <div className="mb-4">
-        <h2 className="section-title">Hospital Finder</h2>
-        <p className="text-gray-500 text-sm">नजदीकी अस्पताल खोजें</p>
+    <div className="min-h-screen bg-gray-100 pb-24">
+
+      {/* 🔥 STICKY SEARCH */}
+      <div className="sticky top-0 z-20 bg-white p-3 shadow-sm">
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <FiMapPin className="absolute left-3 top-3 text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search hospital or city..."
+              className="w-full pl-9 p-3 rounded-xl border focus:ring-2 focus:ring-blue-400 outline-none"
+            />
+          </div>
+
+          <button className="px-4 rounded-xl bg-gray-200">
+            <FiFilter />
+          </button>
+        </div>
       </div>
 
-      <form onSubmit={handleSearch} className="flex gap-2 mb-3">
-        <div className="flex-1 relative">
-          <FiMapPin className="absolute left-3.5 top-3.5 text-gray-400" size={16} />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search city, hospital..."
-            className="input-field pl-9 text-sm py-2.5"
-          />
-        </div>
+      <div className="p-4 space-y-4">
 
-        <button type="button" onClick={() => setShowFilters(!showFilters)}
-          className="px-4 py-2.5 rounded-xl border text-sm flex items-center gap-2">
-          <FiFilter size={15} /> Filters
-        </button>
+        {/* 🔄 LOADING */}
+        {loading ? (
+          <LoadingSpinner text="Finding hospitals..." />
+        ) : (
+          <>
+            {/* 🔢 COUNT */}
+            <p className="text-gray-500 text-sm">
+              {hospitals.length} hospitals found
+            </p>
 
-        <button type="submit" className="btn-primary px-4 py-2.5 text-sm">
-          Search
-        </button>
-      </form>
-
-      {loading ? <LoadingSpinner text="Finding nearest hospitals..." /> : (
-        <>
-          <p className="text-gray-500 text-sm mb-3">
-            {hospitals.length} hospitals found
-          </p>
-
-          <div className="space-y-3">
-            {hospitals.map((h) => (
-              <div key={h.id} className="card">
-                <h4 className="font-bold">{h.name}</h4>
-
-                <p className="text-sm text-gray-500">
-                  {h.city}, {h.state}
-                </p>
-
-                <p className="text-sm font-semibold text-blue-600">
-                  📍 {h.distance?.toFixed(2)} km away
-                </p>
-
-                <div className="flex gap-2 mt-2">
-                  <a href={`tel:${h.phone}`} className="btn-primary text-sm px-3 py-1">
-                    Call
-                  </a>
-
-                  <button onClick={() => openMaps(h)} className="btn-teal text-sm px-3 py-1">
-                    Directions
-                  </button>
-                </div>
+            {/* ❌ EMPTY */}
+            {hospitals.length === 0 && (
+              <div className="text-center bg-white p-6 rounded-2xl shadow">
+                No hospitals found 😕 <br />
+                <span className="text-sm text-gray-400">
+                  Try a different search
+                </span>
               </div>
-            ))}
-          </div>
-        </>
-      )}
+            )}
+
+            {/* 🔥 LIST (FIXED) */}
+            <div className="space-y-4">
+              {hospitals.slice(0, visibleCount).map((h, i) => (
+                <motion.div
+                  key={h._id || i}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="bg-white rounded-3xl p-4 shadow-md"
+                >
+
+                  {/* HEADER */}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-semibold text-base">{h.name}</h4>
+                      <p className="text-sm text-gray-500">
+                        {h.city}, {h.state}
+                      </p>
+                    </div>
+
+                    {/* ⭐ RATING */}
+                    {h.rating && (
+                      <div className="flex items-center gap-1 text-yellow-500 text-sm">
+                        <FiStar />
+                        {h.rating}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 📍 DISTANCE */}
+                  <div className="mt-2">
+                    <span className="inline-block bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full">
+                      📍 {h.distance?.toFixed(2)} km away
+                    </span>
+                  </div>
+
+                  {/* ACTIONS */}
+                  <div className="flex gap-2 mt-4">
+                    <a
+                      href={`tel:${h.phone || ""}`}
+                      className="flex-1 text-center bg-blue-500 text-white py-2 rounded-xl text-sm"
+                    >
+                      Call
+                    </a>
+
+                    <button
+                      onClick={() => openMaps(h)}
+                      className="flex-1 bg-green-500 text-white py-2 rounded-xl text-sm flex items-center justify-center gap-1"
+                    >
+                      <FiNavigation size={14} />
+                      Directions
+                    </button>
+                  </div>
+
+                </motion.div>
+              ))}
+            </div>
+
+            {/* 🔥 LOAD MORE */}
+            {visibleCount < hospitals.length && (
+              <button
+                onClick={() => setVisibleCount(visibleCount + 10)}
+                className="w-full bg-blue-500 text-white py-3 rounded-xl mt-4"
+              >
+                Load More ({hospitals.length - visibleCount} more)
+              </button>
+            )}
+
+          </>
+        )}
+      </div>
+
+      {/* 🔥 FLOAT BUTTON */}
+      <div className="fixed bottom-6 right-4 z-30">
+        <motion.button
+          whileTap={{ scale: 0.85 }}
+          className="w-14 h-14 bg-blue-500 text-white rounded-full shadow-xl flex items-center justify-center"
+        >
+          <FiFilter size={20} />
+        </motion.button>
+      </div>
     </div>
   );
-} 
-
-
-// this code working above 
+}
