@@ -7,7 +7,8 @@ const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
-
+const patientRoutes = require("./routes/patient");
+// above for paitent profile new route 
 dotenv.config();
 
 // Connect to MongoDB
@@ -71,13 +72,14 @@ app.get('/api/health', (req, res) => {
 app.use('/api/schemes', require('./routes/schemes'));
 //import schemeRoutes from './routes/schemes.js';
 //app.use('/api/schemes', schemeRoutes);
-
+app.use("/api/patient", patientRoutes);
+//above route for [aitent profile ]
 
 app.use("/api/healthcard", require("./routes/healthcard"));
 //above 1 is for health card
 app.use('/api/donations', require('./routes/donations'));
 app.use('/api/auth', authLimiter, require('./routes/auth'));
-app.use('/api/patients', require('./routes/patients'));
+app.use('/api/patient', require('./routes/patient'));
 app.use('/api/donors', require('./routes/donors'));
 app.use('/api/hospitals', require('./routes/hospitals'));
 app.use('/api/blood-requests', require('./routes/bloodRequests'));

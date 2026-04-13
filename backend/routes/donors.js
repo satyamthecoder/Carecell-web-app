@@ -1,4 +1,4 @@
-const express = require('express');
+/*const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 
@@ -79,4 +79,160 @@ router.put('/availability', protect, async (req, res) => {
   }
 });
 
+module.exports = router;*/
+
+
+///new code 
+
+
+const express = require('express');
+const router = express.Router();
+const { protect } = require('../middleware/auth');
+const User = require('../models/User');
+
+
+// 🔥 REGISTER / UPDATE DONOR PROFILE
+router.post('/register', protect, async (req, res) => {
+  try {
+    const {
+      bloodGroup,
+      rhFactor,
+      canDonatePlatelet,
+      lastDonationDate,
+      availability,
+      city,
+      pinCode
+    } = req.body;
+
+    const donorProfile = {
+      bloodGroup,
+      rhFactor,
+      canDonatePlatelet: !!canDonatePlatelet,
+      lastDonationDate,
+      availability: availability || 'available',
+      city,
+      pinCode
+    };
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        donorProfile,
+        role: 'donor'
+      },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'Donor profile saved',
+      donorProfile: user.donorProfile
+    });
+
+  } catch (error) {
+    console.error("DONOR REGISTER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+
+// 🔥 TOGGLE ACTIVE STATUS (GO LIVE / GO OFFLINE)
+router.post('/toggle-active', protect, async (req, res) => {
+  try {
+    const { isActive } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { isActiveDonor: !!isActive },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      isActiveDonor: user.isActiveDonor
+    });
+
+  } catch (error) {
+    console.error("TOGGLE ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+
+// 🔥 SEARCH DONORS (FOR PATIENT)
+router.get('/search', protect, async (req, res) => {
+  try {
+    const { bloodGroup, city } = req.query;
+
+    let query = {
+      role: 'donor',
+      isActiveDonor: true,
+      'donorProfile.availability': { $ne: 'unavailable' }
+    };
+
+    // 🔍 Blood group filter
+    if (bloodGroup && bloodGroup !== 'any') {
+      query['donorProfile.bloodGroup'] = bloodGroup;
+    }
+
+    // 📍 City filter
+    if (city) {
+      query['donorProfile.city'] = city;
+    }
+
+    const donors = await User.find(query).select(
+      'name phone donorProfile location createdAt'
+    );
+
+    res.json({
+      success: true,
+      count: donors.length,
+      donors
+    });
+
+  } catch (error) {
+    console.error("SEARCH ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+
+// 🔥 UPDATE AVAILABILITY (AVAILABLE / UNAVAILABLE)
+router.put('/availability', protect, async (req, res) => {
+  try {
+    const { availability, unavailableUntil } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        'donorProfile.availability': availability,
+        'donorProfile.unavailableUntil': unavailableUntil
+      },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      availability: user.donorProfile.availability
+    });
+
+  } catch (error) {
+    console.error("AVAILABILITY ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;
+

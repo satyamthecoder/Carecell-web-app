@@ -40,17 +40,37 @@ export const authAPI = {
   updateProfile: (data) => api.put('/auth/profile', data),
 };
 
-// Patients / Health Card
+//Patients / Health Card
+//export const patientAPI = {
+ //getHealthCard: () => api.get('/patients/health-card'),
+ // saveHealthCard: (data) => api.post('/patients/health-card', data),
+//getQRData: (patientId, fields) => api.get(`/patients/qr/${patientId}?fields=${fields || 'full'}`),
+//};
+// new code for health card 
 export const patientAPI = {
-  getHealthCard: () => api.get('/patients/health-card'),
-  saveHealthCard: (data) => api.post('/patients/health-card', data),
-  getQRData: (patientId, fields) => api.get(`/patients/qr/${patientId}?fields=${fields || 'full'}`),
+  // 🔥 FIXED: use correct backend route
+  getHealthCard: (userId) => api.get(`/healthcard/${userId}`),
+
+  // 🔥 FIXED: send to correct route
+  saveHealthCard: (data) => api.post('/healthcard', data),
+
+  // keep existing
+  getQRData: (patientId, fields) =>
+    api.get(`/patients/qr/${patientId}?fields=${fields || 'full'}`),
+};
+//paiteny profile 
+// ✅ Patient Profile (NEW)
+export const patientProfileAPI = {
+  getProfile: (userId) => api.get(`/patient/${userId}`),
+  saveProfile: (data) => api.post('/patient', data),
 };
 
 // Donors
 export const donorAPI = {
   registerDonor: (data) => api.post('/donors/register', data),
   searchDonors: (params) => api.get('/donors/search', { params }),
+  // new code 
+  toggleActive: (data) => api.post('/donors/toggle-active', data),
   updateAvailability: (data) => api.put('/donors/availability', data),
 };
 
@@ -105,6 +125,7 @@ export const checkinAPI = {
   submit: (data) => api.post('/checkin', data),
   getHistory: (days) => api.get('/checkin/history', { params: { days } }),
 };
+
 
 // AI
 export const aiAPI = {

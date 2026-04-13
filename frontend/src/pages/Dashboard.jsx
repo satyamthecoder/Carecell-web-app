@@ -405,25 +405,35 @@ import useAuthStore from '../context/authStore';
 import { treatmentAPI } from '../utils/api';
 import { format, isToday, isTomorrow, differenceInDays } from 'date-fns';
 
-import logo from '../assets/logo.png';
+import bgImage from "../assets/bg.png";
 
-const quickActions = [
+// 🔥 BASE ACTIONS
+const baseActions = [
   { path: '/emergency', icon: FiAlertTriangle, label: 'Emergency' },
-  { path: '/health-card', icon: FiHeart, label: 'Card' },
-  { path: '/blood-request', icon: FiDroplet, label: 'Blood' },
   { path: '/hospitals', icon: FiMapPin, label: 'Hospitals' },
   { path: '/explain', icon: FiBookOpen, label: 'AI' },
   { path: '/schemes', icon: FiDollarSign, label: 'Schemes' },
-  { path: '/request-help', icon: FiHeart, label: 'Help' },
 ];
 
 export default function Dashboard() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
+  const isDonor = user?.role === "donor";
+
   const [treatments, setTreatments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hospitals, setHospitals] = useState([]);
+
+  // 🔥 ROLE BASED ACTIONS
+  const quickActions = [
+    ...baseActions,
+    ...(!isDonor ? [
+      { path: '/health-card', icon: FiHeart, label: 'Card' },
+      { path: '/blood-request', icon: FiDroplet, label: 'Blood' },
+      { path: '/request-help', icon: FiHeart, label: 'Help' },
+    ] : []),
+  ];
 
   const fetchHospitals = async (lat, lng) => {
     try {
@@ -439,24 +449,29 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const tData = await treatmentAPI.getAll({ status: 'upcoming' });
-        setTreatments(tData.treatments?.slice(0, 3) || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // ❌ Donor doesn't need treatments
+    if (!isDonor) {
+      const loadData = async () => {
+        try {
+          const tData = await treatmentAPI.getAll({ status: 'upcoming' });
+          setTreatments(tData.treatments?.slice(0, 3) || []);
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    loadData();
+      loadData();
+    } else {
+      setLoading(false);
+    }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => fetchHospitals(pos.coords.latitude, pos.coords.longitude),
       () => fetchHospitals(19.076, 72.8777)
     );
-  }, []);
+  }, [isDonor]);
 
   const formatDate = (dt) => {
     const d = new Date(dt);
@@ -474,13 +489,17 @@ export default function Dashboard() {
       animate={{ opacity: 1 }}
     >
 
-      {/* 🔥 BACKGROUND */}
+      {/* 🔥 BACKGROUND FIX */}
       <div
         className="absolute inset-0"
         style={{
-          backgroundImage: `url('/src/assets/bg.png')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
+          //backgroundImage: `url(${require('../assets/bg.png')})`,
+          //backgroundSize: "cover",
+          //backgroundPosition: "center",
+         backgroundImage: `url(${bgImage})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+
         }}
       />
       <div className="absolute inset-0 bg-white/70 backdrop-blur-xl" />
@@ -489,17 +508,21 @@ export default function Dashboard() {
 
         {/* HEADER */}
         <div className="flex items-center gap-3">
-          <img src={logo} alt="CareCell" className="w-10 h-10 rounded-lg shadow" />
+         {/* <img src={logo} alt="CareCell" className="w-10 h-10 rounded-lg shadow" />*/}
           <h1 className="text-xl font-bold text-gray-800">CareCell</h1>
         </div>
 
-        {/* HERO CARD */}
+        {/* HERO */}
         <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-          <div className="rounded-3xl p-5 text-white shadow-lg bg-gradient-to-br from-teal-500 to-blue-600 relative overflow-hidden">
-            <div className="absolute right-0 top-0 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
-
+          <div className={`rounded-3xl p-5 text-white shadow-lg relative overflow-hidden ${
+            isDonor
+              ? "bg-gradient-to-br from-red-500 to-pink-500"
+              : "bg-gradient-to-br from-teal-500 to-blue-600"
+          }`}>
             <h2 className="text-lg font-semibold">Hello, {user?.name} 👋</h2>
-            <p className="text-sm opacity-80 capitalize">{user?.role}</p>
+            <p className="text-sm opacity-80 capitalize">
+              {isDonor ? "Donor Dashboard" : user?.role}
+            </p>
           </div>
         </motion.div>
 
@@ -526,42 +549,35 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* TREATMENTS */}
-        <div className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-md">
-          <div className="flex justify-between mb-3">
-            <h3 className="font-semibold text-gray-700">Treatments</h3>
-            <motion.button whileTap={{ scale: 0.8 }} onClick={() => navigate('/treatments')}>
-              <FiChevronRight />
-            </motion.button>
-          </div>
-
-          {loading ? (
-            <div className="text-center text-gray-500">Loading...</div>
-          ) : treatments.length === 0 ? (
-            <div className="text-center text-gray-500">
-              <FiCalendar className="mx-auto mb-2" />
-              No treatments
+        {/* 🔥 PATIENT ONLY → TREATMENTS */}
+        {!isDonor && (
+          <div className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-md">
+            <div className="flex justify-between mb-3">
+              <h3 className="font-semibold text-gray-700">Treatments</h3>
+              <motion.button whileTap={{ scale: 0.8 }} onClick={() => navigate('/treatments')}>
+                <FiChevronRight />
+              </motion.button>
             </div>
-          ) : (
-            treatments.map((t, i) => (
-              <motion.div
-                key={t._id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="border rounded-xl p-3 mb-2 flex justify-between"
-              >
-                <div>
-                  <p className="font-medium">{t.title}</p>
-                  <p className="text-xs text-gray-500">{t.hospital}</p>
-                </div>
-                <span className="text-blue-600 text-sm">
-                  {formatDate(t.dateTime)}
-                </span>
-              </motion.div>
-            ))
-          )}
-        </div>
+
+            {loading ? (
+              <div className="text-center text-gray-500">Loading...</div>
+            ) : treatments.length === 0 ? (
+              <div className="text-center text-gray-500">No treatments</div>
+            ) : (
+              treatments.map((t, i) => (
+                <motion.div key={t._id} className="border rounded-xl p-3 mb-2 flex justify-between">
+                  <div>
+                    <p className="font-medium">{t.title}</p>
+                    <p className="text-xs text-gray-500">{t.hospital}</p>
+                  </div>
+                  <span className="text-blue-600 text-sm">
+                    {formatDate(t.dateTime)}
+                  </span>
+                </motion.div>
+              ))
+            )}
+          </div>
+        )}
 
         {/* HOSPITALS */}
         <div className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-md">
@@ -576,25 +592,17 @@ export default function Dashboard() {
             <div className="text-center text-gray-500">No hospitals found</div>
           ) : (
             hospitals.slice(0, 3).map((h, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="border rounded-xl p-3 mb-2"
-              >
+              <div key={i} className="border rounded-xl p-3 mb-2">
                 <p className="font-medium">{h.name}</p>
-                <p className="text-xs text-gray-500">
-                  {h.address || "No address"}
-                </p>
-              </motion.div>
+                <p className="text-xs text-gray-500">{h.address || "No address"}</p>
+              </div>
             ))
           )}
         </div>
 
       </div>
 
-      {/* 🔥 FLOATING BUTTON */}
+      {/* FLOAT BUTTON */}
       <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50">
         <motion.button
           whileTap={{ scale: 0.85 }}
@@ -603,29 +611,6 @@ export default function Dashboard() {
         >
           ⚠️
         </motion.button>
-      </div>
-
-      {/* 🔥 BOTTOM NAV */}
-      <div className="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur border-t flex justify-around py-2 z-40">
-        <button onClick={() => navigate('/')} className="text-blue-600 text-xs flex flex-col items-center">
-          🏠
-          Home
-        </button>
-
-        <button onClick={() => navigate('/schemes')} className="text-gray-500 text-xs flex flex-col items-center">
-          💰
-          Schemes
-        </button>
-
-        <button onClick={() => navigate('/treatments')} className="text-gray-500 text-xs flex flex-col items-center">
-          📅
-          Care
-        </button>
-
-        <button onClick={() => navigate('/profile')} className="text-gray-500 text-xs flex flex-col items-center">
-          👤
-          Profile
-        </button>
       </div>
 
     </motion.div>

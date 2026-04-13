@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+/*port React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { FiDroplet, FiCheck, FiMapPin } from 'react-icons/fi';
@@ -75,7 +75,7 @@ export default function DonorProfile() {
 
       {tab === 'profile' && (
         <motion.form initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleSave} className="space-y-4">
-          {/* Blood Group */}
+//        {/* Blood Group *//*
           <div className="card">
             <label className="label">Blood Group / रक्त समूह *</label>
             <div className="grid grid-cols-4 gap-2">
@@ -88,7 +88,7 @@ export default function DonorProfile() {
             </div>
           </div>
 
-          {/* Platelet Donation */}
+//        {/* Platelet Donation *//*
           <div className="card">
             <div className="flex items-center justify-between">
               <div>
@@ -102,7 +102,7 @@ export default function DonorProfile() {
             </div>
           </div>
 
-          {/* Availability */}
+   //     {/* Availability *//*
           <div className="card">
             <label className="label">Availability / उपलब्धता</label>
             <div className="space-y-2">
@@ -116,7 +116,7 @@ export default function DonorProfile() {
             </div>
           </div>
 
-          {/* Last Donation */}
+          {/* Last Donation *//*
           <div className="card">
             <label className="label">Last Donation Date / आखिरी दान की तारीख</label>
             <input type="date" value={form.lastDonationDate} onChange={e => setForm(f => ({ ...f, lastDonationDate: e.target.value }))}
@@ -124,7 +124,7 @@ export default function DonorProfile() {
             <p className="text-gray-400 text-xs mt-1">Minimum 56 days gap between whole blood donations</p>
           </div>
 
-          {/* Location */}
+          {/* Location *//*
           <div className="card space-y-3">
             <h4 className="font-semibold text-gray-800 flex items-center gap-2"><FiMapPin size={16} /> Location / स्थान</h4>
             <input value={form.village} onChange={e => setForm(f => ({ ...f, village: e.target.value }))}
@@ -187,6 +187,174 @@ export default function DonorProfile() {
         </motion.div>
       )}
       <div className="h-4" />
+    </div>
+  );
+}
+*/
+
+
+/// new code 
+import React, { useState, useEffect } from "react";
+import { donorAPI } from "../utils/api";
+import useAuthStore from "../context/authStore";
+
+export default function DonorProfile() {
+  const { user, setUser } = useAuthStore();
+
+  const [form, setForm] = useState({
+    bloodGroup: "",
+    city: "",
+    pinCode: "",
+    canDonatePlatelet: false,
+    availability: "available",
+  });
+
+  const [isActive, setIsActive] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // 🔥 LOAD EXISTING DATA (CRITICAL FIX)
+  useEffect(() => {
+    if (user?.donorProfile) {
+      setForm({
+        bloodGroup: user.donorProfile.bloodGroup || "",
+        city: user.donorProfile.city || "",
+        pinCode: user.donorProfile.pinCode || "",
+        canDonatePlatelet: user.donorProfile.canDonatePlatelet || false,
+        availability: user.donorProfile.availability || "available",
+      });
+    }
+
+    setIsActive(user?.isActiveDonor || false);
+  }, [user]);
+
+  // 🔥 HANDLE INPUT
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    setForm({
+      ...form,
+      [name]: type === "checkbox" ? checked : value,
+    });
+  };
+
+  // 🔥 SAVE PROFILE (FIXED SYNC)
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+
+      const res = await donorAPI.registerDonor(form);
+
+      // 🔥 UPDATE GLOBAL USER STATE
+      if (res?.user) {
+        localStorage.setItem("carecell_user", JSON.stringify(res.user));
+        setUser(res.user);
+      }
+
+      alert("Donor profile saved");
+
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔥 TOGGLE ACTIVE (FIXED SYNC)
+  const toggleActive = async () => {
+    try {
+      const newStatus = !isActive;
+
+      const res = await donorAPI.toggleActive({ isActive: newStatus });
+
+      setIsActive(res.isActiveDonor);
+
+      // 🔥 UPDATE USER STATE
+      const updatedUser = {
+        ...user,
+        isActiveDonor: res.isActiveDonor
+      };
+
+      localStorage.setItem("carecell_user", JSON.stringify(updatedUser));
+      setUser(updatedUser);
+
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  return (
+    <div className="page-container">
+      <h2 className="section-title">🩸 Donor Profile</h2>
+
+      {/* FORM */}
+      <div className="card space-y-3">
+
+        <select
+          name="bloodGroup"
+          value={form.bloodGroup}
+          onChange={handleChange}
+          className="input-field"
+        >
+          <option value="">Select Blood Group</option>
+          <option>A+</option>
+          <option>B+</option>
+          <option>O+</option>
+          <option>AB+</option>
+          <option>A-</option>
+          <option>B-</option>
+          <option>O-</option>
+          <option>AB-</option>
+        </select>
+
+        <input
+          name="city"
+          placeholder="City"
+          value={form.city}
+          onChange={handleChange}
+          className="input-field"
+        />
+
+        <input
+          name="pinCode"
+          placeholder="Pin Code"
+          value={form.pinCode}
+          onChange={handleChange}
+          className="input-field"
+        />
+
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            name="canDonatePlatelet"
+            checked={form.canDonatePlatelet}
+            onChange={handleChange}
+          />
+          Can Donate Platelets
+        </label>
+
+        <button onClick={handleSave} className="btn-primary w-full">
+          {loading ? "Saving..." : "Save Profile"}
+        </button>
+      </div>
+
+      {/* 🔥 ACTIVE BUTTON */}
+      <div className="card mt-4 text-center">
+        <p className="mb-2">
+          Status:
+          <span className={isActive ? "text-green-600" : "text-gray-500"}>
+            {isActive ? " Active" : " Offline"}
+          </span>
+        </p>
+
+        <button
+          onClick={toggleActive}
+          className={`w-full ${
+            isActive ? "bg-red-500" : "bg-green-600"
+          } text-white py-2 rounded-lg`}
+        >
+          {isActive ? "Go Offline" : "Go Active"}
+        </button>
+      </div>
     </div>
   );
 }

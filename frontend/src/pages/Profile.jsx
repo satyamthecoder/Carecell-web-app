@@ -169,23 +169,13 @@ export default function Profile() {
 
 //new code for profile .jsx  with better ui option
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
-import {
-  FiUser, FiLogOut, FiEdit2, FiSave,
-  FiHeart, FiDroplet, FiShield, FiUpload
-} from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
-import useAuthStore from '../context/authStore';
-import { authAPI } from '../utils/api';
+/*import React, { useState, useEffect } from "react";
+import toast from "react-hot-toast";
+import { FiEdit2, FiSave, FiLogOut } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
-const langs = [
-  { value: 'hindi', label: 'हिंदी' },
-  { value: 'english', label: 'English' },
-  { value: 'marathi', label: 'मराठी' },
-  { value: 'bengali', label: 'বাংলা' },
-];
+import useAuthStore from "../context/authStore";
+import { authAPI, patientProfileAPI } from "../utils/api";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -193,26 +183,119 @@ export default function Profile() {
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [image, setImage] = useState(null);
 
   const [form, setForm] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    language: user?.language || 'hindi'
+    name: "",
+    phone: "",
+    dob: "",
+    gender: "",
+
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+
+    bloodGroup: "",
+    diseases: [],
+    allergies: [],
+    medications: [],
+    diseaseStage: "",
+    currentTreatment: "",
+    hospitalName: "",
+
+    hasSurgeries: false,
+    surgeries: "",
+
+    emergencyContact: {
+      name: "",
+      relation: "",
+      phone: ""
+    },
+
+    consent: false
   });
 
-  const handleImage = (e) => {
-    const file = e.target.files[0];
-    if (file) setImage(URL.createObjectURL(file));
+  // 🔥 SAFE ARRAY
+  const safeArray = (val) => {
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string") return val.split(",").map(i => i.trim()).filter(Boolean);
+    return [];
   };
 
+  // 🔥 LOAD PROFILE
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const load = async () => {
+      try {
+        const res = await patientProfileAPI.getProfile(user._id);
+
+        if (res?.patient) {
+          const p = res.patient;
+
+          setForm({
+            ...p,
+            name: user.name || p.name || "",
+            phone: user.phone || p.phone || "",
+
+            diseases: safeArray(p.diseases),
+            allergies: safeArray(p.allergies),
+            medications: safeArray(p.medications),
+
+            emergencyContact: p.emergencyContact || {
+              name: "",
+              relation: "",
+              phone: ""
+            }
+          });
+        } else {
+          setForm(prev => ({
+            ...prev,
+            name: user.name,
+            phone: user.phone
+          }));
+        }
+      } catch {
+        setForm(prev => ({
+          ...prev,
+          name: user.name,
+          phone: user.phone
+        }));
+      }
+    };
+
+    load();
+  }, [user]);
+
+  // 🔥 SAVE
   const handleSave = async () => {
+    if (!form.consent) return toast.error("Accept declaration");
+    if (!form.gender) return toast.error("Select gender");
+
     setSaving(true);
+
     try {
-      await authAPI.updateProfile(form);
-      updateUser(form);
+      // sync auth
+      await authAPI.updateProfile({
+        name: form.name,
+        phone: form.phone
+      });
+
+      updateUser({
+        ...user,
+        name: form.name,
+        phone: form.phone
+      });
+
+      // save patient
+      await patientProfileAPI.saveProfile({
+        ...form,
+        userId: user._id
+      });
+
+      toast.success("Profile saved");
       setEditing(false);
-      toast.success('Profile updated!');
+
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -220,141 +303,481 @@ export default function Profile() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-    toast.success('Logged out');
+  // 🔥 COMPLETENESS
+  const getCompleteness = () => {
+    let total = 10;
+    let filled = 0;
+
+    if (form.name) filled++;
+    if (form.phone) filled++;
+    if (form.dob) filled++;
+    if (form.gender) filled++;
+    if (form.address) filled++;
+    if (form.bloodGroup) filled++;
+    if (form.diseases.length) filled++;
+    if (form.allergies.length) filled++;
+    if (form.emergencyContact?.phone) filled++;
+    if (form.consent) filled++;
+
+    return Math.round((filled / total) * 100);
   };
 
-  const quickLinks = [
-    { icon: FiHeart, label: 'Health Card', path: '/health-card' },
-    { icon: FiDroplet, label: 'Donor Profile', path: '/donor' },
-    { icon: FiShield, label: 'Emergency Mode', path: '/emergency' },
-  ];
-
-  const roleEmoji = { patient: '🏥', donor: '🩸', caregiver: '🤝', admin: '👑' };
-
   return (
-    <div className="page-container">
+    <div className="page-container space-y-4">
 
-      {/* HEADER */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className="bg-gradient-to-r from-teal-500 to-blue-500 text-white rounded-3xl p-5 shadow-lg">
-
-          <div className="flex items-center gap-4">
-
-            {/* Avatar */}
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/30 bg-white/20 flex items-center justify-center">
-                {image ? (
-                  <img src={image} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-2xl">{roleEmoji[user?.role] || '👤'}</span>
-                )}
-              </div>
-
-              <label className="absolute -bottom-2 -right-2 bg-white text-gray-700 p-1 rounded-full cursor-pointer shadow">
-                <FiUpload size={14} />
-                <input type="file" hidden onChange={handleImage} />
-              </label>
-            </div>
-
-            <div>
-              <h2 className="text-lg font-bold">{user?.name}</h2>
-              <p className="text-sm opacity-80">{user?.phone}</p>
-              <p className="text-xs opacity-70 capitalize">{user?.role}</p>
-            </div>
-
-          </div>
-        </div>
-      </motion.div>
-
-      {/* EDIT FORM */}
-      {editing ? (
-        <div className="card mt-5 space-y-3">
-          <h3 className="font-bold">Edit Profile</h3>
-
-          <input
-            value={form.name}
-            onChange={e => setForm({ ...form, name: e.target.value })}
-            className="input-field"
-            placeholder="Name"
-          />
-
-          <input
-            value={form.email}
-            onChange={e => setForm({ ...form, email: e.target.value })}
-            className="input-field"
-            placeholder="Email"
-          />
-
-          <div className="flex gap-2">
-            {langs.map(l => (
-              <button
-                key={l.value}
-                onClick={() => setForm({ ...form, language: l.value })}
-                className={`flex-1 py-2 rounded-xl text-sm ${
-                  form.language === l.value
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-gray-100'
-                }`}
-              >
-                {l.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex gap-2">
-            <button onClick={handleSave} className="btn-primary flex-1">
-              <FiSave /> Save
-            </button>
-            <button onClick={() => setEditing(false)} className="btn-secondary">
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="card mt-5">
-          <div className="flex justify-between mb-3">
-            <h3 className="font-bold">Account</h3>
-            <button onClick={() => setEditing(true)} className="text-blue-600 flex items-center gap-1">
-              <FiEdit2 /> Edit
-            </button>
-          </div>
-
-          <div className="space-y-2 text-sm">
-            <p><b>Name:</b> {user?.name}</p>
-            <p><b>Phone:</b> {user?.phone}</p>
-            <p><b>Email:</b> {user?.email || 'N/A'}</p>
-            <p><b>Language:</b> {user?.language}</p>
-          </div>
-        </div>
-      )}
-
-      {/* QUICK LINKS */}
-      <div className="card mt-5">
-        <h3 className="font-bold mb-3">Quick Actions</h3>
-
-        {quickLinks.map(link => {
-          const Icon = link.icon;
-          return (
-            <button
-              key={link.path}
-              onClick={() => navigate(link.path)}
-              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100"
-            >
-              <Icon />
-              <span>{link.label}</span>
-            </button>
-          );
-        })}
+ //     {/* HEADER *//*}
+      <div className="bg-gradient-to-r from-teal-500 to-blue-500 text-white p-5 rounded-2xl">
+        <h2 className="text-lg font-bold">{form.name}</h2>
+        <p>{form.phone}</p>
+        <p className="text-xs mt-1">Profile {getCompleteness()}% complete</p>
       </div>
 
+//      {/* PROFILE *//*}
+      <div className="card">
+
+        <div className="flex justify-between mb-3">
+          <h3 className="font-bold">Patient Profile</h3>
+          <button onClick={() => setEditing(!editing)}>
+            <FiEdit2 />
+          </button>
+        </div>
+
+        {editing ? (
+          <div className="space-y-2">
+
+            <input value={form.name} disabled className="input-field bg-gray-100" />
+            <input value={form.phone} disabled className="input-field bg-gray-100" />
+
+            <input type="date" className="input-field"
+              value={form.dob || ""}
+              onChange={e => setForm({ ...form, dob: e.target.value })}
+            />
+
+            <select className="input-field"
+              value={form.gender}
+              onChange={e => setForm({ ...form, gender: e.target.value })}
+            >
+              <option value="">Gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+
+            <input placeholder="Address" className="input-field"
+              value={form.address}
+              onChange={e => setForm({ ...form, address: e.target.value })}
+            />
+
+            <input placeholder="City" className="input-field"
+              value={form.city}
+              onChange={e => setForm({ ...form, city: e.target.value })}
+            />
+
+            <input placeholder="State" className="input-field"
+              value={form.state}
+              onChange={e => setForm({ ...form, state: e.target.value })}
+            />
+
+            <input placeholder="Pincode" className="input-field"
+              value={form.pincode}
+              onChange={e => setForm({ ...form, pincode: e.target.value })}
+            />
+
+            <input placeholder="Blood Group" className="input-field"
+              value={form.bloodGroup}
+              onChange={e => setForm({ ...form, bloodGroup: e.target.value })}
+            />
+
+            <input placeholder="Diseases (comma separated)" className="input-field"
+              value={form.diseases.join(", ")}
+              onChange={e => setForm({
+                ...form,
+                diseases: e.target.value.split(",").map(i => i.trim()).filter(Boolean)
+              })}
+            />
+
+            <input placeholder="Allergies" className="input-field"
+              value={form.allergies.join(", ")}
+              onChange={e => setForm({
+                ...form,
+                allergies: e.target.value.split(",").map(i => i.trim()).filter(Boolean)
+              })}
+            />
+
+            <input placeholder="Emergency Name" className="input-field"
+              value={form.emergencyContact.name}
+              onChange={e => setForm({
+                ...form,
+                emergencyContact: { ...form.emergencyContact, name: e.target.value }
+              })}
+            />
+
+            <input placeholder="Relation" className="input-field"
+              value={form.emergencyContact.relation}
+              onChange={e => setForm({
+                ...form,
+                emergencyContact: { ...form.emergencyContact, relation: e.target.value }
+              })}
+            />
+
+            <input placeholder="Emergency Phone" className="input-field"
+              value={form.emergencyContact.phone}
+              onChange={e => setForm({
+                ...form,
+                emergencyContact: { ...form.emergencyContact, phone: e.target.value }
+              })}
+            />
+
+            <label className="flex gap-2 text-sm">
+              <input type="checkbox"
+                checked={form.consent}
+                onChange={e => setForm({ ...form, consent: e.target.checked })}
+              />
+              I agree to share medical info
+            </label>
+
+            <button onClick={handleSave} className="btn-primary w-full">
+              <FiSave /> {saving ? "Saving..." : "Save"}
+            </button>
+
+          </div>
+        ) : (
+          <div className="text-sm space-y-1">
+            <p><b>Gender:</b> {form.gender}</p>
+            <p><b>City:</b> {form.city}</p>
+            <p><b>Blood Group:</b> {form.bloodGroup}</p>
+            <p><b>Diseases:</b> {form.diseases.join(", ") || "None"}</p>
+          </div>
+        )}
+
+      </div>
+
+ //     {/* ACTIONS *//*}
+      <button onClick={() => navigate("/health-card")} className="btn-primary w-full">
+        View Health Card
+      </button>
+
+      <button onClick={logout}
+        className="w-full py-3 rounded-xl bg-gray-100 text-red-500 font-semibold flex justify-center gap-2">
+        <FiLogOut /> Logout
+      </button>
+
+    </div>
+  );
+}*/
+
+
+//new code for this with both donor and paitens profile
+
+
+import React, { useState, useEffect } from "react";
+import toast from "react-hot-toast";
+import { FiEdit2, FiSave, FiLogOut } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+
+import useAuthStore from "../context/authStore";
+import { authAPI, patientProfileAPI } from "../utils/api";
+
+export default function Profile() {
+  const navigate = useNavigate();
+  const { user, logout, updateUser } = useAuthStore();
+
+  const isDonor = user?.role === "donor"; // 🔥 NEW
+
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    dob: "",
+    gender: "",
+
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+
+    bloodGroup: "",
+    diseases: [],
+    allergies: [],
+    medications: [],
+    diseaseStage: "",
+    currentTreatment: "",
+    hospitalName: "",
+
+    hasSurgeries: false,
+    surgeries: "",
+
+    emergencyContact: {
+      name: "",
+      relation: "",
+      phone: ""
+    },
+
+    consent: false
+  });
+
+  // 🔥 SAFE ARRAY
+  const safeArray = (val) => {
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string")
+      return val.split(",").map(i => i.trim()).filter(Boolean);
+    return [];
+  };
+
+  // 🔥 LOAD PROFILE (ONLY FOR PATIENT)
+  useEffect(() => {
+    if (!user?._id || isDonor) return;
+
+    const load = async () => {
+      try {
+        const res = await patientProfileAPI.getProfile(user._id);
+
+        if (res?.patient) {
+          const p = res.patient;
+
+          setForm({
+            ...p,
+            name: user.name || p.name || "",
+            phone: user.phone || p.phone || "",
+
+            diseases: safeArray(p.diseases),
+            allergies: safeArray(p.allergies),
+            medications: safeArray(p.medications),
+
+            emergencyContact: p.emergencyContact || {
+              name: "",
+              relation: "",
+              phone: ""
+            }
+          });
+        } else {
+          setForm(prev => ({
+            ...prev,
+            name: user.name,
+            phone: user.phone
+          }));
+        }
+      } catch {
+        setForm(prev => ({
+          ...prev,
+          name: user.name,
+          phone: user.phone
+        }));
+      }
+    };
+
+    load();
+  }, [user, isDonor]);
+
+  // 🔥 SAVE (ONLY PATIENT)
+  const handleSave = async () => {
+    if (!form.consent) return toast.error("Accept declaration");
+    if (!form.gender) return toast.error("Select gender");
+
+    setSaving(true);
+
+    try {
+      await authAPI.updateProfile({
+        name: form.name,
+        phone: form.phone
+      });
+
+      updateUser({
+        ...user,
+        name: form.name,
+        phone: form.phone
+      });
+
+      await patientProfileAPI.saveProfile({
+        ...form,
+        userId: user._id
+      });
+
+      toast.success("Profile saved");
+      setEditing(false);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 🔥 COMPLETENESS
+  const getCompleteness = () => {
+    let total = 10;
+    let filled = 0;
+
+    if (form.name) filled++;
+    if (form.phone) filled++;
+    if (form.dob) filled++;
+    if (form.gender) filled++;
+    if (form.address) filled++;
+    if (form.bloodGroup) filled++;
+    if (form.diseases.length) filled++;
+    if (form.allergies.length) filled++;
+    if (form.emergencyContact?.phone) filled++;
+    if (form.consent) filled++;
+
+    return Math.round((filled / total) * 100);
+  };
+
+  return (
+    <div className="page-container space-y-4">
+
+      {/* HEADER */}
+      <div className="bg-gradient-to-r from-teal-500 to-blue-500 text-white p-5 rounded-2xl">
+        <h2 className="text-lg font-bold">{user?.name}</h2>
+        <p>{user?.phone}</p>
+        <p className="text-xs mt-1">
+          {isDonor ? "Donor Profile" : `Profile ${getCompleteness()}% complete`}
+        </p>
+      </div>
+
+      {/* 🔥 DONOR VIEW */}
+      {isDonor ? (
+        <div className="card p-4">
+          <h3 className="font-bold mb-2">🩸 Donor Profile</h3>
+
+          <p><b>Role:</b> Donor</p>
+          <p><b>Name:</b> {user?.name}</p>
+          <p><b>Phone:</b> {user?.phone}</p>
+
+          <p className="text-xs text-gray-500 mt-2">
+            Donor features coming next (availability, blood group, etc.)
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* PATIENT PROFILE */}
+          <div className="card">
+
+            <div className="flex justify-between mb-3">
+              <h3 className="font-bold">Patient Profile</h3>
+              <button onClick={() => setEditing(!editing)}>
+                <FiEdit2 />
+              </button>
+            </div>
+
+            {editing ? (
+              <div className="space-y-2">
+
+                <input value={form.name} disabled className="input-field bg-gray-100" />
+                <input value={form.phone} disabled className="input-field bg-gray-100" />
+
+                <input type="date" className="input-field"
+                  value={form.dob || ""}
+                  onChange={e => setForm({ ...form, dob: e.target.value })}
+                />
+
+                <select className="input-field"
+                  value={form.gender}
+                  onChange={e => setForm({ ...form, gender: e.target.value })}
+                >
+                  <option value="">Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+
+                <input placeholder="Address" className="input-field"
+                  value={form.address}
+                  onChange={e => setForm({ ...form, address: e.target.value })}
+                />
+
+                <input placeholder="City" className="input-field"
+                  value={form.city}
+                  onChange={e => setForm({ ...form, city: e.target.value })}
+                />
+
+                <input placeholder="State" className="input-field"
+                  value={form.state}
+                  onChange={e => setForm({ ...form, state: e.target.value })}
+                />
+
+                <input placeholder="Pincode" className="input-field"
+                  value={form.pincode}
+                  onChange={e => setForm({ ...form, pincode: e.target.value })}
+                />
+
+                <input placeholder="Blood Group" className="input-field"
+                  value={form.bloodGroup}
+                  onChange={e => setForm({ ...form, bloodGroup: e.target.value })}
+                />
+
+                <input placeholder="Diseases (comma separated)" className="input-field"
+                  value={form.diseases.join(", ")}
+                  onChange={e => setForm({
+                    ...form,
+                    diseases: e.target.value.split(",").map(i => i.trim()).filter(Boolean)
+                  })}
+                />
+
+                <input placeholder="Allergies" className="input-field"
+                  value={form.allergies.join(", ")}
+                  onChange={e => setForm({
+                    ...form,
+                    allergies: e.target.value.split(",").map(i => i.trim()).filter(Boolean)
+                  })}
+                />
+
+                <input placeholder="Emergency Name" className="input-field"
+                  value={form.emergencyContact.name}
+                  onChange={e => setForm({
+                    ...form,
+                    emergencyContact: { ...form.emergencyContact, name: e.target.value }
+                  })}
+                />
+
+                <input placeholder="Relation" className="input-field"
+                  value={form.emergencyContact.relation}
+                  onChange={e => setForm({
+                    ...form,
+                    emergencyContact: { ...form.emergencyContact, relation: e.target.value }
+                  })}
+                />
+
+                <input placeholder="Emergency Phone" className="input-field"
+                  value={form.emergencyContact.phone}
+                  onChange={e => setForm({
+                    ...form,
+                    emergencyContact: { ...form.emergencyContact, phone: e.target.value }
+                  })}
+                />
+
+                <label className="flex gap-2 text-sm">
+                  <input type="checkbox"
+                    checked={form.consent}
+                    onChange={e => setForm({ ...form, consent: e.target.checked })}
+                  />
+                  I agree to share medical info
+                </label>
+
+                <button onClick={handleSave} className="btn-primary w-full">
+                  <FiSave /> {saving ? "Saving..." : "Save"}
+                </button>
+
+              </div>
+            ) : (
+              <div className="text-sm space-y-1">
+                <p><b>Gender:</b> {form.gender}</p>
+                <p><b>City:</b> {form.city}</p>
+                <p><b>Blood Group:</b> {form.bloodGroup}</p>
+                <p><b>Diseases:</b> {form.diseases.join(", ") || "None"}</p>
+              </div>
+            )}
+
+          </div>
+
+          {/* HEALTH CARD BUTTON */}
+          <button onClick={() => navigate("/health-card")} className="btn-primary w-full">
+            View Health Card
+          </button>
+        </>
+      )}
+
       {/* LOGOUT */}
-      <button
-        onClick={handleLogout}
-        className="w-full mt-5 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center gap-2"
-      >
+      <button onClick={logout}
+        className="w-full py-3 rounded-xl bg-gray-100 text-red-500 font-semibold flex justify-center gap-2">
         <FiLogOut /> Logout
       </button>
 
