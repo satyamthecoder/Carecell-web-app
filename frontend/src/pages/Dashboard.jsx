@@ -393,6 +393,8 @@ export default function Dashboard() {
 
 
 //new code with logo and branding
+// 🔥 ONLY UI CHANGED — LOGIC SAME
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -404,15 +406,13 @@ import {
 import useAuthStore from '../context/authStore';
 import { treatmentAPI } from '../utils/api';
 import { format, isToday, isTomorrow, differenceInDays } from 'date-fns';
-
 import bgImage from "../assets/bg.png";
 
-// 🔥 BASE ACTIONS
 const baseActions = [
-  { path: '/emergency', icon: FiAlertTriangle, label: 'Emergency' },
-  { path: '/hospitals', icon: FiMapPin, label: 'Hospitals' },
-  { path: '/explain', icon: FiBookOpen, label: 'AI' },
-  { path: '/schemes', icon: FiDollarSign, label: 'Schemes' },
+  { path: '/emergency', icon: FiAlertTriangle, label: 'Emergency', desc: '24/7 critical help', color: 'bg-red-500' },
+  { path: '/hospitals', icon: FiMapPin, label: 'Hospitals', desc: 'Find nearby hospitals', color: 'bg-blue-500' },
+  { path: '/explain', icon: FiBookOpen, label: 'AI Help', desc: 'Get AI assistance', color: 'bg-purple-500' },
+  { path: '/schemes', icon: FiDollarSign, label: 'Schemes', desc: 'View schemes', color: 'bg-orange-500' },
 ];
 
 export default function Dashboard() {
@@ -425,14 +425,15 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [hospitals, setHospitals] = useState([]);
 
-  // 🔥 ROLE BASED ACTIONS
   const quickActions = [
     ...baseActions,
-    ...(!isDonor ? [
-      { path: '/health-card', icon: FiHeart, label: 'Card' },
-      { path: '/blood-request', icon: FiDroplet, label: 'Blood' },
-      { path: '/request-help', icon: FiHeart, label: 'Help' },
-    ] : []),
+    ...(isDonor
+      ? [{ path: '/donor', icon: FiDroplet, label: 'Donate', desc: 'Help save lives', color: 'bg-green-500' }]
+      : [
+          { path: '/health-card', icon: FiHeart, label: 'Card', desc: 'View health card', color: 'bg-teal-500' },
+          { path: '/blood-request', icon: FiDroplet, label: 'Blood', desc: 'Request blood', color: 'bg-red-500' },
+          { path: '/request-help', icon: FiHeart, label: 'Help', desc: 'Financial help', color: 'bg-pink-500' },
+        ]),
   ];
 
   const fetchHospitals = async (lat, lng) => {
@@ -442,26 +443,22 @@ export default function Dashboard() {
       );
       const data = await res.json();
       setHospitals(Array.isArray(data) ? data : data?.hospitals || []);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setHospitals([]);
     }
   };
 
   useEffect(() => {
-    // ❌ Donor doesn't need treatments
     if (!isDonor) {
       const loadData = async () => {
         try {
           const tData = await treatmentAPI.getAll({ status: 'upcoming' });
           setTreatments(tData.treatments?.slice(0, 3) || []);
-        } catch (err) {
-          console.error(err);
-        } finally {
+        } catch {}
+        finally {
           setLoading(false);
         }
       };
-
       loadData();
     } else {
       setLoading(false);
@@ -483,80 +480,73 @@ export default function Dashboard() {
   };
 
   return (
-    <motion.div
-      className="relative min-h-screen p-4 pb-24"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
+    <motion.div className="relative min-h-screen p-4 pb-24">
 
-      {/* 🔥 BACKGROUND FIX */}
-      <div
-        className="absolute inset-0"
-        style={{
-          //backgroundImage: `url(${require('../assets/bg.png')})`,
-          //backgroundSize: "cover",
-          //backgroundPosition: "center",
-         backgroundImage: `url(${bgImage})`,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-
-        }}
-      />
+      {/* BACKGROUND */}
+      <div className="absolute inset-0" style={{
+        backgroundImage: `url(${bgImage})`,
+        backgroundSize: "cover",
+      }} />
       <div className="absolute inset-0 bg-white/70 backdrop-blur-xl" />
 
       <div className="relative z-10 space-y-6">
 
-        {/* HEADER */}
-        <div className="flex items-center gap-3">
-         {/* <img src={logo} alt="CareCell" className="w-10 h-10 rounded-lg shadow" />*/}
-          <h1 className="text-xl font-bold text-gray-800">CareCell</h1>
-        </div>
-
         {/* HERO */}
-        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-          <div className={`rounded-3xl p-5 text-white shadow-lg relative overflow-hidden ${
-            isDonor
-              ? "bg-gradient-to-br from-red-500 to-pink-500"
-              : "bg-gradient-to-br from-teal-500 to-blue-600"
-          }`}>
+        <div className={`rounded-3xl p-5 text-white shadow-lg flex items-center justify-between ${
+          isDonor
+            ? "bg-gradient-to-r from-red-500 to-pink-500"
+            : "bg-gradient-to-r from-teal-500 to-blue-600"
+        }`}>
+          <div>
             <h2 className="text-lg font-semibold">Hello, {user?.name} 👋</h2>
-            <p className="text-sm opacity-80 capitalize">
-              {isDonor ? "Donor Dashboard" : user?.role}
+            <p className="text-sm opacity-80">
+              {isDonor ? "Donor Dashboard" : "Patient Dashboard"}
             </p>
           </div>
-        </motion.div>
 
-        {/* QUICK ACTIONS */}
-        <div>
-          <h3 className="font-semibold mb-3 text-gray-700">Quick Access</h3>
-
-          <div className="grid grid-cols-3 gap-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <motion.button
-                  key={action.path}
-                  whileTap={{ scale: 0.9 }}
-                  whileHover={{ scale: 1.05 }}
-                  onClick={() => navigate(action.path)}
-                  className="p-4 rounded-2xl flex flex-col items-center shadow-md backdrop-blur bg-white/70"
-                >
-                  <Icon size={20} />
-                  <span className="text-xs mt-1">{action.label}</span>
-                </motion.button>
-              );
-            })}
+          {/* Avatar */}
+          <div className="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center text-white font-bold">
+            {user?.name?.charAt(0)}
           </div>
         </div>
 
-        {/* 🔥 PATIENT ONLY → TREATMENTS */}
+        {/* ACTION LIST (🔥 MAIN CHANGE) */}
+        <div className="space-y-3">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <motion.div
+                key={action.path}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => navigate(action.path)}
+                className="bg-white/80 backdrop-blur rounded-2xl p-4 flex items-center justify-between shadow-md cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+
+                  {/* ICON */}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${action.color}`}>
+                    <Icon size={18} />
+                  </div>
+
+                  {/* TEXT */}
+                  <div>
+                    <p className="font-semibold text-sm">{action.label}</p>
+                    <p className="text-xs text-gray-500">{action.desc}</p>
+                  </div>
+                </div>
+
+                <FiChevronRight />
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* PATIENT ONLY */}
         {!isDonor && (
-          <div className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-md">
+          <div className="bg-white/80 rounded-2xl p-4 shadow-md">
             <div className="flex justify-between mb-3">
               <h3 className="font-semibold text-gray-700">Treatments</h3>
-              <motion.button whileTap={{ scale: 0.8 }} onClick={() => navigate('/treatments')}>
-                <FiChevronRight />
-              </motion.button>
+              <FiChevronRight onClick={() => navigate('/treatments')} />
             </div>
 
             {loading ? (
@@ -564,8 +554,8 @@ export default function Dashboard() {
             ) : treatments.length === 0 ? (
               <div className="text-center text-gray-500">No treatments</div>
             ) : (
-              treatments.map((t, i) => (
-                <motion.div key={t._id} className="border rounded-xl p-3 mb-2 flex justify-between">
+              treatments.map((t) => (
+                <div key={t._id} className="border rounded-xl p-3 mb-2 flex justify-between">
                   <div>
                     <p className="font-medium">{t.title}</p>
                     <p className="text-xs text-gray-500">{t.hospital}</p>
@@ -573,28 +563,30 @@ export default function Dashboard() {
                   <span className="text-blue-600 text-sm">
                     {formatDate(t.dateTime)}
                   </span>
-                </motion.div>
+                </div>
               ))
             )}
           </div>
         )}
 
         {/* HOSPITALS */}
-        <div className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-md">
+        <div className="bg-white/80 rounded-2xl p-4 shadow-md">
           <div className="flex justify-between mb-3">
             <h3 className="font-semibold text-gray-700">Nearby Hospitals</h3>
-            <motion.button whileTap={{ scale: 0.8 }} onClick={() => navigate('/hospitals')}>
-              <FiChevronRight />
-            </motion.button>
+            <FiChevronRight onClick={() => navigate('/hospitals')} />
           </div>
 
           {hospitals.length === 0 ? (
-            <div className="text-center text-gray-500">No hospitals found</div>
+            <div className="text-center text-gray-500">
+              No hospitals found
+            </div>
           ) : (
             hospitals.slice(0, 3).map((h, i) => (
               <div key={i} className="border rounded-xl p-3 mb-2">
                 <p className="font-medium">{h.name}</p>
-                <p className="text-xs text-gray-500">{h.address || "No address"}</p>
+                <p className="text-xs text-gray-500">
+                  {h.address || "No address"}
+                </p>
               </div>
             ))
           )}
@@ -602,15 +594,14 @@ export default function Dashboard() {
 
       </div>
 
-      {/* FLOAT BUTTON */}
-      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50">
-        <motion.button
-          whileTap={{ scale: 0.85 }}
-          className="w-16 h-16 rounded-full bg-red-500 text-white shadow-2xl flex items-center justify-center text-2xl"
+      {/* EMERGENCY BUTTON */}
+      <div className="fixed bottom-16 left-1/2 -translate-x-1/2">
+        <button
+          className="w-16 h-16 rounded-full bg-red-500 text-white text-2xl shadow-lg"
           onClick={() => navigate('/emergency')}
         >
           ⚠️
-        </motion.button>
+        </button>
       </div>
 
     </motion.div>

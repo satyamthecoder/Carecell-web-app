@@ -150,9 +150,10 @@
 // new code    for groq ai
 
 
-import React, { useState, useRef, useEffect } from 'react';
+// 🔥 UPDATED: MedicalExplainer.jsx (NO BREAKING CHANGES)
+/*port React, { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { FiSearch, FiFileText, FiVolume2 } from 'react-icons/fi';
+import { FiSearch, FiFileText, FiMic } from 'react-icons/fi';
 import { aiAPI } from '../utils/api';
 
 export default function MedicalExplainer() {
@@ -161,40 +162,59 @@ export default function MedicalExplainer() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const [speakingId, setSpeakingId] = useState(null);
+  const [listening, setListening] = useState(false);
+
   const chatEndRef = useRef(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // 🔊 SPEAK FUNCTION
-  const speakText = (text) => {
+  // 🔊 SPEAK (SAFE)
+  const speakText = (text, id) => {
+    if (!text || !('speechSynthesis' in window)) {
+      return toast.error("Speech not supported");
+    }
+
+    window.speechSynthesis.cancel();
+
     const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = "hi-IN"; // change to en-IN if needed
+    speech.lang = "en-IN";
+
+    speech.onend = () => setSpeakingId(null);
+
     window.speechSynthesis.speak(speech);
+    setSpeakingId(id);
   };
 
-  // ⌨️ TYPING EFFECT FUNCTION
-  const typeMessage = (fullText) => {
-    let index = 0;
+  // 🔊 STOP
+  const stopSpeak = () => {
+    window.speechSynthesis.cancel();
+    setSpeakingId(null);
+  };
 
-    const interval = setInterval(() => {
-      setMessages(prev => {
-        const lastMsg = prev[prev.length - 1];
+  // 🎤 VOICE INPUT
+  const startListening = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        // update last AI message
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          ...lastMsg,
-          text: lastMsg.text + fullText.charAt(index),
-        };
+    if (!SpeechRecognition) {
+      return toast.error("Voice not supported");
+    }
 
-        return updated;
-      });
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-IN";
 
-      index++;
-      if (index >= fullText.length) clearInterval(interval);
-    }, 15);
+    setListening(true);
+    recognition.start();
+
+    recognition.onresult = (event) => {
+      setInput(event.results[0][0].transcript);
+      setListening(false);
+    };
+
+    recognition.onerror = () => setListening(false);
   };
 
   const explain = async () => {
@@ -208,8 +228,15 @@ export default function MedicalExplainer() {
     setInput('');
     setLoading(true);
 
-    // Add user message
-    setMessages(prev => [...prev, { role: 'user', text: userText }]);
+    // ✅ USER MESSAGE
+    setMessages(prev => [
+      ...prev,
+      {
+        id: Date.now(),
+        role: 'user',
+        text: userText
+      }
+    ]);
 
     try {
       let res;
@@ -220,18 +247,27 @@ export default function MedicalExplainer() {
         res = await aiAPI.explainConsent(userText);
       }
 
-      const reply = res?.explanation || "No response";
+      const reply = (res?.explanation || "No response").trim();
 
-      // Add empty AI message first
-      setMessages(prev => [...prev, { role: 'ai', text: '' }]);
-
-      // Start typing effect
-      setTimeout(() => {
-        typeMessage(reply);
-      }, 100);
+      // ✅ AI MESSAGE (NO TYPING BUG)
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(),
+          role: 'ai',
+          text: reply
+        }
+      ]);
 
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'ai', text: "Something went wrong. Try again." }]);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(),
+          role: 'ai',
+          text: "Something went wrong."
+        }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -240,15 +276,13 @@ export default function MedicalExplainer() {
   return (
     <div className="page-container flex flex-col h-full">
 
-      {/* Header */}
-      <div className="mb-4">
-        <h2 className="section-title">AI Medical Chat</h2>
-        <p className="text-gray-500 text-sm">
-          अब सवाल पूछें जैसे ChatGPT
-        </p>
+//    {/* HEADER *//*
+      <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow">
+        <h2 className="text-lg font-semibold">AI Medical Assistant</h2>
+        <p className="text-xs opacity-80">Ask anything about health</p>
       </div>
 
-      {/* Mode Toggle */}
+//    {/* MODE *//*
       <div className="flex gap-2 mb-3 bg-gray-100 p-1 rounded-2xl">
         <button
           onClick={() => setMode('term')}
@@ -256,7 +290,7 @@ export default function MedicalExplainer() {
             mode === 'term' ? 'bg-white font-semibold' : 'text-gray-500'
           }`}
         >
-          <FiSearch size={16} /> Term
+          <FiSearch /> Term
         </button>
 
         <button
@@ -265,39 +299,43 @@ export default function MedicalExplainer() {
             mode === 'consent' ? 'bg-white font-semibold' : 'text-gray-500'
           }`}
         >
-          <FiFileText size={16} /> Consent
+          <FiFileText /> Consent
         </button>
       </div>
 
-      {/* Chat Messages */}
+ //   {/* CHAT *//*
       <div className="flex-1 overflow-y-auto space-y-3 mb-3 p-2">
+
         {messages.length === 0 && (
           <p className="text-gray-400 text-center text-sm">
-            Ask something like: "What is fever?"
+            Try: "What is fever?"
           </p>
         )}
 
-        {messages.map((msg, i) => (
+        {messages.map((msg) => (
           <div
-            key={i}
-            className={`p-3 rounded-xl max-w-[80%] text-sm ${
+            key={msg.id}
+            className={`p-3 rounded-2xl max-w-[80%] text-sm shadow ${
               msg.role === 'user'
-                ? 'bg-blue-500 text-white ml-auto'
-                : 'bg-gray-100 text-gray-800'
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white ml-auto'
+                : 'bg-white text-gray-800'
             }`}
           >
-            {/* Text */}
-            <p style={{ whiteSpace: "pre-line", lineHeight: "1.6" }}>
-              {msg.text}
-            </p>
+            <p style={{ whiteSpace: "pre-line" }}>{msg.text}</p>
 
-            {/* 🔊 Speak button for AI */}
+//          {/* 🔊 SAFE SPEAK BUTTON *//*
             {msg.role === 'ai' && msg.text && (
               <button
-                onClick={() => speakText(msg.text)}
-                className="mt-2 text-xs flex items-center gap-1 text-gray-600 hover:text-black"
+                onClick={() => {
+                  if (speakingId === msg.id) {
+                    stopSpeak();
+                  } else {
+                    speakText(msg.text, msg.id);
+                  }
+                }}
+                className="mt-2 text-xs text-gray-600"
               >
-                <FiVolume2 /> Speak
+                {speakingId === msg.id ? "🛑 Stop" : "🔊 Speak"}
               </button>
             )}
           </div>
@@ -312,8 +350,18 @@ export default function MedicalExplainer() {
         <div ref={chatEndRef}></div>
       </div>
 
-      {/* Input */}
-      <div className="flex gap-2">
+ //   {/* INPUT *//*
+      <div className="flex gap-2 items-center">
+
+        <button
+          onClick={startListening}
+          className={`p-2 rounded-full ${
+            listening ? "bg-red-500 text-white" : "bg-gray-200"
+          }`}
+        >
+          <FiMic />
+        </button>
+
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -326,6 +374,254 @@ export default function MedicalExplainer() {
           onClick={explain}
           disabled={loading}
           className="btn-primary px-4"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+}*/
+
+
+/// new code 
+
+
+import React, { useState, useRef, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import { FiSearch, FiFileText, FiMic } from 'react-icons/fi';
+import { aiAPI } from '../utils/api';
+
+export default function MedicalExplainer() {
+  const [mode, setMode] = useState('term');
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const [speakingId, setSpeakingId] = useState(null);
+  const [listening, setListening] = useState(false);
+
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // 🔊 SPEAK
+  const speakText = (text, id) => {
+    if (!text || !('speechSynthesis' in window)) {
+      return toast.error("Speech not supported");
+    }
+
+    window.speechSynthesis.cancel();
+
+    const speech = new SpeechSynthesisUtterance(text);
+    speech.lang = "en-IN";
+
+    speech.onend = () => setSpeakingId(null);
+
+    window.speechSynthesis.speak(speech);
+    setSpeakingId(id);
+  };
+
+  // 🔊 STOP
+  const stopSpeak = () => {
+    window.speechSynthesis.cancel();
+    setSpeakingId(null);
+  };
+
+  // 🎤 VOICE INPUT
+  const startListening = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      return toast.error("Voice not supported");
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-IN";
+
+    setListening(true);
+    recognition.start();
+
+    recognition.onresult = (event) => {
+      setInput(event.results[0][0].transcript);
+      setListening(false);
+    };
+
+    recognition.onerror = () => setListening(false);
+  };
+
+  // 🤖 AI CALL
+  const explain = async () => {
+    if (loading) return;
+
+    if (!input.trim()) {
+      return toast.error('Enter something first');
+    }
+
+    const userText = input;
+    setInput('');
+    setLoading(true);
+
+    // USER MESSAGE
+    setMessages(prev => [
+      ...prev,
+      {
+        id: Date.now(),
+        role: 'user',
+        text: userText
+      }
+    ]);
+
+    try {
+      let res;
+
+      if (mode === 'term') {
+        res = await aiAPI.explainTerm(userText);
+      } else {
+        res = await aiAPI.explainConsent(userText);
+      }
+
+      const reply = (res?.explanation || "No response").trim();
+
+      // AI MESSAGE
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(),
+          role: 'ai',
+          text: reply
+        }
+      ]);
+
+    } catch (err) {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(),
+          role: 'ai',
+          text: "Something went wrong."
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+
+      {/* HEADER */}
+      <div className="p-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white shadow-lg rounded-b-3xl">
+        <h2 className="text-xl font-bold tracking-wide">🧠 AI Medical Assistant</h2>
+        <p className="text-xs opacity-80">Smart health explanations, instantly</p>
+      </div>
+
+      {/* MODE SWITCH */}
+      <div className="flex gap-2 p-3">
+        <button
+          onClick={() => setMode('term')}
+          className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${
+            mode === 'term'
+              ? 'bg-indigo-600 text-white shadow'
+              : 'bg-white text-gray-500 border'
+          }`}
+        >
+          <FiSearch className="inline mr-1" /> Term
+        </button>
+
+        <button
+          onClick={() => setMode('consent')}
+          className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${
+            mode === 'consent'
+              ? 'bg-purple-600 text-white shadow'
+              : 'bg-white text-gray-500 border'
+          }`}
+        >
+          <FiFileText className="inline mr-1" /> Consent
+        </button>
+      </div>
+
+      {/* CHAT */}
+      <div className="flex-1 overflow-y-auto px-3 space-y-4">
+
+        {messages.length === 0 && (
+          <div className="text-center text-gray-400 mt-10 text-sm">
+            💡 Try: “What is fever?”
+          </div>
+        )}
+
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`flex ${
+              msg.role === 'user' ? 'justify-end' : 'justify-start'
+            }`}
+          >
+            <div
+              className={`max-w-[80%] p-4 rounded-2xl text-sm shadow-md backdrop-blur-md ${
+                msg.role === 'user'
+                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                  : 'bg-white/80 border border-gray-200 text-gray-800'
+              }`}
+            >
+              <p style={{ whiteSpace: "pre-line" }}>{msg.text}</p>
+
+              {/* SPEAK BUTTON */}
+              {msg.role === 'ai' && msg.text && (
+                <button
+                  onClick={() => {
+                    if (speakingId === msg.id) {
+                      stopSpeak();
+                    } else {
+                      speakText(msg.text, msg.id);
+                    }
+                  }}
+                  className="mt-3 text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 transition"
+                >
+                  {speakingId === msg.id ? "🛑 Stop" : "🔊 Speak"}
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {loading && (
+          <div className="bg-white px-4 py-2 rounded-xl shadow text-sm w-fit animate-pulse">
+            🤖 Thinking...
+          </div>
+        )}
+
+        <div ref={chatEndRef}></div>
+      </div>
+
+      {/* INPUT */}
+      <div className="p-3 bg-white border-t flex gap-2 items-center shadow-inner">
+
+        <button
+          onClick={startListening}
+          className={`p-3 rounded-full transition ${
+            listening
+              ? "bg-red-500 text-white animate-pulse"
+              : "bg-gray-200 hover:bg-gray-300"
+          }`}
+        >
+          <FiMic />
+        </button>
+
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && explain()}
+          placeholder="Ask your health question..."
+          className="flex-1 px-4 py-2 rounded-xl border focus:ring-2 focus:ring-indigo-400 outline-none"
+        />
+
+        <button
+          onClick={explain}
+          disabled={loading}
+          className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium shadow hover:opacity-90 transition"
         >
           Send
         </button>

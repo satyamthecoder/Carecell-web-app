@@ -5,27 +5,32 @@
 
 //code new  above working but constant data 
 import React, { useEffect, useState } from "react";
-import { FiSearch, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import {
+  FiSearch,
+  FiChevronDown,
+  FiChevronUp,
+  FiFilter,
+  FiMapPin,
+  FiDollarSign,
+  FiTag
+} from "react-icons/fi";
 
 export default function Schemes() {
   const [schemes, setSchemes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 🔥 FILTER STATES
   const [search, setSearch] = useState("");
   const [state, setState] = useState("");
   const [category, setCategory] = useState("");
   const [gender, setGender] = useState("");
   const [income, setIncome] = useState("");
-  //const [age, setAge] = "";
   const [age, setAge] = useState("");
-  const [occupation, setOccupation] = useState(""); // ✅ NEW
+  const [occupation, setOccupation] = useState("");
 
   const [visibleCount, setVisibleCount] = useState(10);
   const [expandedId, setExpandedId] = useState(null);
 
-  // 🔥 PARAM BUILDER
   const buildParams = () => {
     const params = new URLSearchParams();
 
@@ -35,12 +40,11 @@ export default function Schemes() {
     if (gender) params.append("gender", gender);
     if (income) params.append("income", income);
     if (age) params.append("age", age);
-    if (occupation) params.append("occupation", occupation); // ✅ NEW
+    if (occupation) params.append("occupation", occupation);
 
     return params.toString();
   };
 
-  // 🔥 FETCH
   const fetchSchemes = async () => {
     try {
       setLoading(true);
@@ -54,7 +58,6 @@ export default function Schemes() {
 
       let data = await res.json();
 
-      // 🔥 FALLBACK (important UX)
       if (data.length === 0 && queryString) {
         const fallbackRes = await fetch("http://localhost:5000/api/schemes");
         data = await fallbackRes.json();
@@ -64,7 +67,6 @@ export default function Schemes() {
       setVisibleCount(10);
 
     } catch (err) {
-      console.error(err);
       setError("Failed to load schemes");
     } finally {
       setLoading(false);
@@ -75,9 +77,7 @@ export default function Schemes() {
     fetchSchemes();
   }, [state, category, gender, income, age, occupation]);
 
-  const handleSearch = () => {
-    fetchSchemes();
-  };
+  const handleSearch = () => fetchSchemes();
 
   const resetFilters = () => {
     setSearch("");
@@ -91,9 +91,11 @@ export default function Schemes() {
   };
 
   return (
-    <div className="p-4 bg-gray-100 min-h-screen">
+    <div className="p-4 min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
 
-      <h2 className="text-2xl font-bold mb-4">Find Schemes</h2>
+      <h2 className="text-2xl font-bold mb-4 text-gray-800">
+        🎯 Find Government Schemes
+      </h2>
 
       {/* 🔍 SEARCH */}
       <div className="flex gap-2 mb-4">
@@ -109,14 +111,19 @@ export default function Schemes() {
 
         <button
           onClick={handleSearch}
-          className="bg-blue-500 text-white px-4 rounded-xl"
+          className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 rounded-xl shadow"
         >
           Search
         </button>
       </div>
 
       {/* 🔥 FILTERS */}
-      <div className="bg-white p-3 rounded-xl shadow mb-4 grid grid-cols-2 gap-2">
+      <div className="bg-white p-4 rounded-2xl shadow mb-4 grid grid-cols-2 gap-2">
+
+        <div className="col-span-2 flex items-center gap-2 text-gray-600 mb-2">
+          <FiFilter />
+          <span className="text-sm font-medium">Filters</span>
+        </div>
 
         <select value={state} onChange={(e) => setState(e.target.value)}>
           <option value="">All States</option>
@@ -136,7 +143,6 @@ export default function Schemes() {
           <option value="female">Female</option>
         </select>
 
-        {/* 🔥 NEW USER TYPE */}
         <select value={occupation} onChange={(e) => setOccupation(e.target.value)}>
           <option value="">User Type</option>
           <option value="student">Student</option>
@@ -161,36 +167,37 @@ export default function Schemes() {
         />
       </div>
 
-      {/* 🔥 STATUS */}
       {loading && <p className="text-center">Loading...</p>}
       {error && <p className="text-center text-red-500">{error}</p>}
 
-      {/* 🔥 NO RESULTS UI */}
+      {/* NO RESULT */}
       {!loading && schemes.length === 0 && (
         <div className="text-center bg-white p-6 rounded-2xl shadow">
           <h3 className="text-lg font-semibold mb-2">No schemes found 😕</h3>
-          <p className="text-sm text-gray-500 mb-4">
-            Try changing filters or reset
-          </p>
-
           <button
             onClick={resetFilters}
-            className="bg-blue-500 text-white px-4 py-2 rounded-xl"
+            className="bg-indigo-500 text-white px-4 py-2 rounded-xl"
           >
             Reset Filters
           </button>
         </div>
       )}
 
-      {/* 🔥 RESULTS */}
+      {/* RESULTS */}
       <div className="space-y-4">
         {schemes.slice(0, visibleCount).map((s) => (
-          <div key={s._id} className="bg-white rounded-2xl shadow p-4">
+          <div
+            key={s._id}
+            className="bg-white rounded-2xl shadow-md p-4 border hover:shadow-lg transition"
+          >
 
+            {/* HEADER */}
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-semibold">{s.name}</h3>
-                <p className="text-xs text-gray-500">{s.state}</p>
+                <h3 className="font-semibold text-gray-800">{s.name}</h3>
+                <p className="text-xs text-gray-500 flex items-center gap-1">
+                  <FiMapPin /> {s.state}
+                </p>
               </div>
 
               <button
@@ -202,29 +209,31 @@ export default function Schemes() {
               </button>
             </div>
 
-            <p className="text-sm text-gray-600 mt-2">
-              {s.description}
-            </p>
+            {/* DESC */}
+            <p className="text-sm text-gray-600 mt-2">{s.description}</p>
 
+            {/* TAGS */}
             <div className="flex flex-wrap gap-2 mt-2">
               {s.tags?.map((tag, i) => (
                 <span
                   key={i}
-                  className="text-xs bg-gray-200 px-2 py-1 rounded-full"
+                  className="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-600 flex items-center gap-1"
                 >
-                  {tag}
+                  <FiTag /> {tag}
                 </span>
               ))}
             </div>
 
+            {/* EXPANDED */}
             {expandedId === s._id && (
               <div className="mt-3 text-sm space-y-2">
 
-                <div className="bg-gray-50 p-2 rounded">
-                  💰 Income Limit: ₹{s.incomeLimit || "N/A"}
+                <div className="bg-green-50 p-2 rounded flex items-center gap-2">
+                  <FiDollarSign className="text-green-600" />
+                  Income Limit: ₹{s.incomeLimit || "N/A"}
                 </div>
 
-                <div className="bg-gray-50 p-2 rounded">
+                <div className="bg-blue-50 p-2 rounded">
                   🎯 Category: {s.category}
                 </div>
 
@@ -234,7 +243,7 @@ export default function Schemes() {
 
                 {s.applicationLink && (
                   <a href={s.applicationLink} target="_blank" rel="noreferrer">
-                    <button className="w-full bg-green-500 text-white py-2 rounded">
+                    <button className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-2 rounded-xl shadow">
                       Apply Now
                     </button>
                   </a>
@@ -249,7 +258,7 @@ export default function Schemes() {
       {visibleCount < schemes.length && (
         <button
           onClick={() => setVisibleCount(visibleCount + 10)}
-          className="bg-blue-500 text-white w-full py-2 rounded-xl mt-4"
+          className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white w-full py-2 rounded-xl mt-4 shadow"
         >
           Load More
         </button>

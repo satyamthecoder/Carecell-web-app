@@ -84,48 +84,135 @@ module.exports = router;*/
 
 ///new code 
 
-
+/*
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const User = require('../models/User');
 
 
+// 🔥 HELPER: CALCULATE AGE
+const calculateAge = (dob) => {
+  return new Date().getFullYear() - new Date(dob).getFullYear();
+};
+
+
+// 🔥 HELPER: CHECK DONATION GAP
+const canDonateNow = (lastDonationDate, gender) => {
+  if (!lastDonationDate) return true;
+
+  const diffDays =
+    (new Date() - new Date(lastDonationDate)) / (1000 * 60 * 60 * 24);
+
+  if (gender === 'female') return diffDays >= 120;
+  return diffDays >= 90;
+};
+
+
 // 🔥 REGISTER / UPDATE DONOR PROFILE
 router.post('/register', protect, async (req, res) => {
   try {
     const {
+      fullName,
+      dob,
+      gender,
       bloodGroup,
       rhFactor,
+      city,
+      state,
+      address,
+      pinCode,
+      diseases,
+      allergies,
+      surgeries,
       canDonatePlatelet,
       lastDonationDate,
-      availability,
-      city,
-      pinCode
+      consent
     } = req.body;
 
-    const donorProfile = {
-      bloodGroup,
-      rhFactor,
-      canDonatePlatelet: !!canDonatePlatelet,
-      lastDonationDate,
-      availability: availability || 'available',
-      city,
-      pinCode
+    // 🚨 REQUIRED CHECKS
+    if (!fullName || !dob || !gender || !bloodGroup) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      });
+    }
+
+    if (!consent) {
+      return res.status(400).json({
+        success: false,
+        message: "Consent is required"
+      });
+    }
+
+    // 🔥 AGE VALIDATION
+    const age = calculateAge(dob);
+    if (age < 18 || age > 65) {
+      return res.status(400).json({
+        success: false,
+        message: "Not eligible: Age must be between 18–65"
+      });
+    }
+
+    // 🔥 DONATION GAP VALIDATION
+    const allowedToDonate = canDonateNow(lastDonationDate, gender);
+
+    // 🔥 ELIGIBILITY LOGIC
+    const isEligible = allowedToDonate;
+
+    // 🔥 NORMALIZE ARRAYS
+    const safeDiseases = Array.isArray(diseases)
+      ? diseases
+      : diseases ? [diseases] : [];
+
+    const safeAllergies = Array.isArray(allergies)
+      ? allergies
+      : allergies ? [allergies] : [];
+
+    const safeSurgeries = Array.isArray(surgeries)
+      ? surgeries
+      : surgeries ? [surgeries] : [];
+
+    const updateData = {
+      role: 'donor',
+
+      donorProfile: {
+        fullName,
+        dob,
+        gender,
+        bloodGroup,
+        rhFactor,
+
+        city,
+        state,
+        address,
+        pinCode,
+
+        diseases: safeDiseases,
+        allergies: safeAllergies,
+        surgeries: safeSurgeries,
+
+        canDonatePlatelet: !!canDonatePlatelet,
+        lastDonationDate,
+
+        consent: !!consent,
+
+        isEligible,
+        availability: isEligible ? 'available' : 'unavailable'
+      }
     };
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      {
-        donorProfile,
-        role: 'donor'
-      },
+      updateData,
       { new: true }
     );
 
     res.json({
       success: true,
-      message: 'Donor profile saved',
+      message: isEligible
+        ? "Donor profile saved (Eligible)"
+        : "Saved but NOT eligible to donate",
       donorProfile: user.donorProfile
     });
 
@@ -139,16 +226,23 @@ router.post('/register', protect, async (req, res) => {
 });
 
 
-// 🔥 TOGGLE ACTIVE STATUS (GO LIVE / GO OFFLINE)
+// 🔥 TOGGLE ACTIVE STATUS
 router.post('/toggle-active', protect, async (req, res) => {
   try {
     const { isActive } = req.body;
 
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { isActiveDonor: !!isActive },
-      { new: true }
-    );
+    const user = await User.findById(req.user.id);
+
+    // 🚨 BLOCK IF NOT ELIGIBLE
+    if (!user.donorProfile?.isEligible) {
+      return res.status(400).json({
+        success: false,
+        message: "You are not eligible to donate"
+      });
+    }
+
+    user.isActiveDonor = !!isActive;
+    await user.save();
 
     res.json({
       success: true,
@@ -165,7 +259,7 @@ router.post('/toggle-active', protect, async (req, res) => {
 });
 
 
-// 🔥 SEARCH DONORS (FOR PATIENT)
+// 🔥 SEARCH DONORS
 router.get('/search', protect, async (req, res) => {
   try {
     const { bloodGroup, city } = req.query;
@@ -173,21 +267,20 @@ router.get('/search', protect, async (req, res) => {
     let query = {
       role: 'donor',
       isActiveDonor: true,
-      'donorProfile.availability': { $ne: 'unavailable' }
+      'donorProfile.isEligible': true,
+      'donorProfile.availability': 'available'
     };
 
-    // 🔍 Blood group filter
     if (bloodGroup && bloodGroup !== 'any') {
       query['donorProfile.bloodGroup'] = bloodGroup;
     }
 
-    // 📍 City filter
     if (city) {
       query['donorProfile.city'] = city;
     }
 
     const donors = await User.find(query).select(
-      'name phone donorProfile location createdAt'
+      'name phone donorProfile location'
     );
 
     res.json({
@@ -206,19 +299,21 @@ router.get('/search', protect, async (req, res) => {
 });
 
 
-// 🔥 UPDATE AVAILABILITY (AVAILABLE / UNAVAILABLE)
+// 🔥 UPDATE AVAILABILITY
 router.put('/availability', protect, async (req, res) => {
   try {
     const { availability, unavailableUntil } = req.body;
 
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      {
-        'donorProfile.availability': availability,
-        'donorProfile.unavailableUntil': unavailableUntil
-      },
-      { new: true }
-    );
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false });
+    }
+
+    user.donorProfile.availability = availability;
+    user.donorProfile.unavailableUntil = unavailableUntil;
+
+    await user.save();
 
     res.json({
       success: true,
@@ -234,5 +329,236 @@ router.put('/availability', protect, async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = router;*/  
 
+
+/// code above also working 
+
+
+const express = require('express');
+const router = express.Router();
+const { protect } = require('../middleware/auth');
+const User = require('../models/User');
+
+// 🔥 HELPER: AGE
+const calculateAge = (dob) => {
+  return new Date().getFullYear() - new Date(dob).getFullYear();
+};
+
+// 🔥 HELPER: GAP
+const canDonateNow = (lastDonationDate, gender) => {
+  if (!lastDonationDate) return true;
+
+  const diffDays =
+    (new Date() - new Date(lastDonationDate)) / (1000 * 60 * 60 * 24);
+
+  if (gender === 'female') return diffDays >= 120;
+  return diffDays >= 90;
+};
+
+// 🔥 HELPER: DISTANCE (HAVERSINE)
+const getDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+};
+
+
+
+// 🔥 REGISTER (UNCHANGED LOGIC)
+router.post('/register', protect, async (req, res) => {
+  try {
+    const {
+      fullName, dob, gender, bloodGroup, rhFactor,
+      city, state, address, pinCode,
+      diseases, allergies, surgeries,
+      canDonatePlatelet, lastDonationDate,
+      consent, location
+    } = req.body;
+
+    if (!fullName || !dob || !gender || !bloodGroup) {
+      return res.status(400).json({ success: false, message: "Required fields missing" });
+    }
+
+    if (!consent) {
+      return res.status(400).json({ success: false, message: "Consent is required" });
+    }
+
+    const age = calculateAge(dob);
+    if (age < 18 || age > 65) {
+      return res.status(400).json({ success: false, message: "Age must be 18–65" });
+    }
+
+    const allowedToDonate = canDonateNow(lastDonationDate, gender);
+
+    const blockedDiseases = ['hiv', 'hepatitis', 'cancer'];
+    const diseaseText = (diseases || "").toLowerCase();
+
+    const hasBlockedDisease = blockedDiseases.some(d =>
+      diseaseText.includes(d)
+    );
+
+    const isEligible = allowedToDonate && !hasBlockedDisease;
+
+    const safeDiseases = diseases ? diseases.split(',').map(d => d.trim()) : [];
+    const safeAllergies = allergies ? allergies.split(',').map(a => a.trim()) : [];
+    const safeSurgeries = surgeries ? surgeries.split(',').map(s => s.trim()) : [];
+
+    const updateData = {
+      role: 'donor',
+      donorProfile: {
+        fullName, dob, gender, bloodGroup, rhFactor,
+        city, state, address, pinCode,
+        diseases: safeDiseases,
+        allergies: safeAllergies,
+        surgeries: safeSurgeries,
+        canDonatePlatelet: !!canDonatePlatelet,
+        lastDonationDate,
+        consent: !!consent,
+        isEligible,
+        availability: isEligible ? 'available' : 'unavailable'
+      }
+    };
+
+    if (location?.lat && location?.lng) {
+      updateData.location = {
+        coordinates: location
+      };
+    }
+
+    const user = await User.findByIdAndUpdate(req.user.id, updateData, { new: true });
+
+    res.json({
+      success: true,
+      message: isEligible ? "Donor registered successfully" : "Saved but NOT eligible",
+      donorProfile: user.donorProfile
+    });
+
+  } catch (error) {
+    console.error("DONOR REGISTER ERROR:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+
+// 🔥 TOGGLE ACTIVE (UNCHANGED)
+router.post('/toggle-active', protect, async (req, res) => {
+  try {
+    const { isActive } = req.body;
+
+    const user = await User.findById(req.user.id);
+
+    if (!user.donorProfile?.isEligible) {
+      return res.status(400).json({
+        success: false,
+        message: "You are not eligible to donate"
+      });
+    }
+
+    user.isActiveDonor = !!isActive;
+    await user.save();
+
+    res.json({
+      success: true,
+      isActiveDonor: user.isActiveDonor
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+
+// 🔥 🔥 🔥 UPDATED SEARCH (MAIN FEATURE)
+router.get('/search', protect, async (req, res) => {
+  try {
+    const { bloodGroup, city, lat, lng, radius = 25 } = req.query;
+
+    let query = {
+      role: 'donor',
+      isActiveDonor: true,
+      'donorProfile.isEligible': true,
+      'donorProfile.availability': 'available'
+    };
+
+    if (bloodGroup && bloodGroup !== 'any') {
+      query['donorProfile.bloodGroup'] = bloodGroup;
+    }
+
+    const donors = await User.find(query).select(
+      'name phone donorProfile location'
+    );
+
+    let filtered = donors;
+
+    // 🔥 LOCATION FILTER
+    if (lat && lng) {
+      filtered = donors.map(d => {
+        const dLat = d.location?.coordinates?.lat;
+        const dLng = d.location?.coordinates?.lng;
+
+        if (!dLat || !dLng) return null;
+
+        const distance = getDistance(
+          parseFloat(lat),
+          parseFloat(lng),
+          dLat,
+          dLng
+        );
+
+        return { ...d.toObject(), distance };
+      })
+      .filter(d => d && d.distance <= radius)
+      .sort((a, b) => a.distance - b.distance);
+
+    } else if (city) {
+      // fallback
+      filtered = donors.filter(d =>
+        d.donorProfile?.city === city
+      );
+    }
+
+    res.json({
+      success: true,
+      count: filtered.length,
+      donors: filtered
+    });
+
+  } catch (error) {
+    console.error("SEARCH ERROR:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+
+// 🔥 AVAILABILITY (UNCHANGED)
+router.put('/availability', protect, async (req, res) => {
+  try {
+    const { availability, unavailableUntil } = req.body;
+
+    const user = await User.findById(req.user.id);
+
+    user.donorProfile.availability = availability;
+    user.donorProfile.unavailableUntil = unavailableUntil;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      availability: user.donorProfile.availability
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+module.exports = router;

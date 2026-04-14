@@ -230,10 +230,10 @@ const userSchema = new mongoose.Schema({
     select: false
   },
 
-  // 🔥 ROLE (MAIN CONTROL)
+  // 🔥 ROLE
   role: {
     type: String,
-    enum: ['patient', 'donor'], // 🔥 CLEANED (removed caregiver/admin)
+    enum: ['patient', 'donor'],
     default: 'patient'
   },
 
@@ -243,31 +243,37 @@ const userSchema = new mongoose.Schema({
     default: 'hindi'
   },
 
-  
-
-  // 🩸 DONOR PROFILE (ONLY FOR DONOR)
+  // 🩸 DONOR PROFILE
   donorProfile: {
+    fullName: String,
+    dob: Date,
+    gender: String,
+
     bloodGroup: String,
     rhFactor: String,
+
+    city: String,
+    state: String,
+    address: String,
+    pinCode: String,
+
+    diseases: [String],
+    allergies: [String],
+    surgeries: [String],
 
     canDonatePlatelet: { type: Boolean, default: false },
 
     lastDonationDate: Date,
 
+    consent: { type: Boolean, default: false },
+
+    isEligible: { type: Boolean, default: false },
+
     availability: {
       type: String,
       enum: ['available', 'routine_only', 'unavailable'],
-      default: 'available'
-    },
-
-    unavailableUntil: Date,
-
-    city: String,
-    pinCode: String,
-
-    totalDonations: { type: Number, default: 0 },
-
-    isVerified: { type: Boolean, default: false }
+      default: 'unavailable'
+    }
   },
 
   // 📍 LOCATION
@@ -282,7 +288,10 @@ const userSchema = new mongoose.Schema({
     }
   },
 
-  isActive: { type: Boolean, default: true },
+  // 🔥 FIX (CRITICAL)
+    isActiveDonor: { type: Boolean, default: false },
+
+ isActiveDonor: {type: Boolean, default:true},
   lastLogin: Date,
   fcmToken: String
 
@@ -309,11 +318,7 @@ userSchema.methods.matchPassword = async function(enteredPassword) {
 // 🔒 CLEAN RESPONSE
 userSchema.methods.toJSON = function() {
   const obj = this.toObject();
-
   delete obj.password;
-  //delete obj.otp;
-  //delete obj.otpExpire;
-
   return obj;
 };
 

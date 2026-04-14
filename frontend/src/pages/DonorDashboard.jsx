@@ -1,10 +1,12 @@
 import React from "react";
 import { FiDroplet, FiMapPin, FiAlertTriangle } from "react-icons/fi";
 import useAuthStore from "../context/authStore";
+import { useNavigate } from "react-router-dom";
 
 export default function DonorDashboard() {
   const { user } = useAuthStore();
   const donor = user?.donorProfile || {};
+  const navigate = useNavigate();
 
   return (
     <div className="page-container space-y-4">
@@ -34,6 +36,18 @@ export default function DonorDashboard() {
         <FiAlertTriangle />
         Emergency Help
       </button>
+
+      {
+  user?.role === "donor" && (
+    <div
+      onClick={() => navigate("/donor")}
+      className="quick-card cursor-pointer"
+    >
+      <div className="text-2xl mb-1">🩸</div>
+      <p className="text-sm font-semibold">Donate Blood</p>
+    </div>
+  )
+}
 
       {/* HOSPITAL */}
       <button
