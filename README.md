@@ -1,483 +1,517 @@
-# 🏥 CareCell Network
+<div align="center">
 
-> **AI-powered, offline-friendly, Hindi-first digital companion for cancer patients in India**
+# 🎗️ CareCell
 
-[![Node.js](https://img.shields.io/badge/Node.js-20+-green)](https://nodejs.org)
-[![React](https://img.shields.io/badge/React-18.3-blue)](https://reactjs.org)
-[![MongoDB](https://img.shields.io/badge/MongoDB-7+-green)](https://mongodb.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+### *A Hindi-First Digital Companion for Cancer Patients in India*
 
----
+[![Made with Love](https://img.shields.io/badge/Made%20with-%E2%9D%A4%EF%B8%8F-red?style=for-the-badge)](https://github.com)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
+[![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js)](https://nodejs.org)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?style=for-the-badge&logo=mongodb)](https://mongodb.com)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-06B6D4?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com)
 
-## 📖 Table of Contents
+<br/>
 
-1. [Features](#features)
-2. [Architecture](#architecture)
-3. [Prerequisites](#prerequisites)
-4. [Quick Start](#quick-start)
-5. [Environment Variables](#environment-variables)
-6. [API Documentation](#api-documentation)
-7. [Frontend Pages](#frontend-pages)
-8. [Deployment](#deployment)
-9. [Scaling for 10,000 Users](#scaling)
-10. [Tech Stack](#tech-stack)
+> *कैंसर मरीजों के लिए प्यार से बनाया गया*
+> *Built with ❤️ for cancer patients across India*
 
----
+<br/>
 
-## ✨ Features
+**CareCell** combines patient support workflows, donor coordination, emergency access, treatment tracking, and AI-assisted medical explanation — all in a single full-stack web application designed for real Indian healthcare journeys.
 
-| Feature | Description |
-|---------|-------------|
-| 🪪 **Patient Health Card** | Digital ID with QR code — blood group, allergies, emergency contacts |
-| 🚨 **Emergency Mode** | One-tap nearest oncology hospital, blood bank, ambulance |
-| 🩸 **Blood & Platelet Donors** | AI-matched donor search + Village Blood Circle |
-| 🏥 **Hospital Finder** | Filter by distance, cost, government/private, OPD status |
-| 🤖 **AI Medical Explainer** | Hindi explanations of medical terms & consent forms (Claude AI) |
-| 📅 **Treatment Tracker** | Reminders for chemo, surgery, follow-ups — works offline |
-| 🥗 **Nutrition Guide** | Cancer-type & phase specific Hindi diet plans |
-| 💰 **Financial Schemes** | Government & NGO schemes filterable by state and cancer type |
-| 😊 **Daily Check-in** | AI-monitored symptom check with emergency escalation |
-| 🌐 **Hindi-first** | Full Hindi + English bilingual UI |
+</div>
 
 ---
 
-## 🏗️ Architecture
+## 🌟 Overview
+
+CareCell is built around the practical, day-to-day needs of Indian cancer patients and their caregivers:
+
+- 🪪 **Digital health card** with public QR access for emergency sharing
+- 🚨 **Emergency mode** with helpline shortcuts and nearby hospital discovery
+- 🩸 **Blood request & donor network** for community-powered care
+- 🤖 **AI medical explainer** for consent forms, reports, and medical terms — in Hindi
+- 📋 **Daily symptom check-in** with risk scoring
+- 💊 **Treatment tracker** for upcoming and completed care events
+- 🏛️ **Government & NGO scheme discovery** for financial support
+- 💰 **Patient help/donation request flow** with admin approval UI
+
+---
+
+## ✨ Key Features
+
+| 🏥 Area | 💡 Capability |
+|---|---|
+| **Patient Support** | Health card, treatment tracking, daily check-in, hospital finder |
+| **Emergency Care** | One-tap helpline access and nearest-hospital lookup |
+| **Donor Network** | Donor registration, donor search, blood request response flow |
+| **AI Support** | Hindi-first explanation of medical terms and consent/report text |
+| **Financial Access** | Scheme discovery and help request submission |
+| **Indian Context** | Hindi-first UI, Indian emergency numbers, cancer-care use cases |
+
+---
+
+## 🛠️ Tech Stack
+
+### 🎨 Frontend
+
+| Technology | Purpose |
+|---|---|
+| ⚛️ React 18 | Core UI framework |
+| 🗺️ React Router | Client-side routing |
+| 🐻 Zustand | Global state management |
+| 📡 Axios | HTTP client |
+| 🎨 Tailwind CSS | Utility-first styling |
+| 🎬 Framer Motion | Animations |
+| 🔲 `qrcode.react` | QR code generation |
+| 📄 `html2canvas` + `jspdf` | PDF export |
+
+### ⚙️ Backend
+
+| Technology | Purpose |
+|---|---|
+| 🟢 Node.js + Express | API server |
+| 🍃 MongoDB + Mongoose | Database & ODM |
+| 🔐 JWT + `bcryptjs` | Authentication & hashing |
+| 🛡️ `helmet` | Security headers |
+| 🚦 `express-rate-limit` | API rate limiting |
+| 🧹 `express-mongo-sanitize` | Query sanitization |
+| 🤖 `groq-sdk` | AI explainer integration |
+| 📧 `nodemailer` | Email utilities |
+
+---
+
+## 🗂️ Repository Architecture
+
+```text
+Carecell-web-app/
+├── 🖥️  backend/
+│   ├── config/
+│   │   └── db.js                  # MongoDB connection
+│   ├── middleware/
+│   │   └── auth.js                # JWT auth & role checks
+│   ├── models/
+│   │   ├── BloodRequest.js
+│   │   ├── Checkin.js
+│   │   ├── Donation.js
+│   │   ├── HealthCard.js
+│   │   ├── Hospital.js
+│   │   ├── Patient.js
+│   │   ├── Scheme.js
+│   │   ├── Treatment.js
+│   │   └── User.js
+│   ├── routes/
+│   │   ├── ai.js
+│   │   ├── auth.js
+│   │   ├── bloodRequests.js
+│   │   ├── checkin.js
+│   │   ├── donations.js
+│   │   ├── donors.js
+│   │   ├── emergency.js
+│   │   ├── healthcard.js
+│   │   ├── hospitals.js
+│   │   ├── patient.js
+│   │   ├── schemes.js
+│   │   └── treatments.js
+│   ├── utils/
+│   │   ├── generateToken.js
+│   │   ├── otp.js
+│   │   └── sendEmail.js
+│   └── server.js
+│
+├── 🎨  frontend/
+│   ├── public/
+│   │   └── index.html
+│   └── src/
+│       ├── components/
+│       │   ├── Layout.jsx
+│       │   └── LoadingSpinner.jsx
+│       ├── context/
+│       │   └── authStore.js
+│       ├── pages/
+│       │   ├── AdminDonations.jsx
+│       │   ├── BloodRequest.jsx
+│       │   ├── DailyCheckin.jsx
+│       │   ├── Dashboard.jsx
+│       │   ├── DonorProfile.jsx
+│       │   ├── EmergencyMode.jsx
+│       │   ├── HealthCard.jsx
+│       │   ├── HospitalFinder.jsx
+│       │   ├── Login.jsx
+│       │   ├── MedicalExplainer.jsx
+│       │   ├── Nutrition.jsx
+│       │   ├── Profile.jsx
+│       │   ├── PublicHealthCard.jsx
+│       │   ├── Register.jsx
+│       │   ├── RequestHelp.jsx
+│       │   ├── Schemes.jsx
+│       │   └── TreatmentTracker.jsx
+│       ├── utils/
+│       │   └── api.js
+│       ├── App.js
+│       └── index.css
+│
+├── 📜  scripts/
+│   └── setup.js
+└── package.json
+```
+
+---
+
+## 🏛️ Application Architecture
+
+### 🎨 Frontend Architecture
+
+The frontend is a React single-page application with route-based feature modules:
+
+- **`App.js`** — defines public and protected routes
+- **`authStore.js`** — stores authenticated user and token in local storage via Zustand
+- **`utils/api.js`** — centralizes all backend API calls through Axios
+- **`components/Layout.jsx`** — shared navigation with role-aware UI
+- **`pages/`** — feature pages implementing full user flows (health card, donor profile, treatment tracking, AI explainer, and more)
+
+### ⚙️ Backend Architecture
+
+The backend is an Express API server organized by route modules and Mongoose models:
+
+- **`server.js`** — boots the app, connects MongoDB, applies middleware, mounts routes
+- **`config/db.js`** — handles MongoDB connection gracefully (app stays alive even if DB fails)
+- **`middleware/auth.js`** — JWT-based auth protection and role checks
+- **`routes/*.js`** — REST endpoints organized by feature area
+- **`models/*.js`** — Mongoose persistence schemas for users, patients, requests, treatments, schemes, hospitals, and donations
+
+### 🔄 Runtime Flow
 
 ```
-carecell/
-├── backend/                    # Node.js + Express API
-│   ├── server.js               # Main entry point
-│   ├── config/db.js            # MongoDB connection
-│   ├── middleware/auth.js      # JWT authentication
-│   ├── models/                 # Mongoose schemas
-│   │   ├── User.js             # Patient/Donor/Caregiver   //  caregiver need to be remove 
-│   │   ├── BloodRequest.js     # Blood requests
-│   │   ├── Treatment.js        # Treatment tracker         // need to be remove 
-│   │   └── Checkin.js          # Daily check-ins
-│   └── routes/                 # REST API routes
-│       ├── auth.js             # Register/Login
-│       ├── patients.js       mujhe karna bau     # Health card + QR
-│       ├── donors.js           # Donor profiles
-│       ├── hospitals.js        # Hospital search
-│       ├── bloodRequests.js    # Blood matching
-│       ├── treatments.js    owais kar rha hai     # Treatment CRUD
-│       ├── nutrition.js        # Diet plans           // need to be remove 
-│       ├── schemes.js     owais kar raha hai        # Financial schemes
-│       ├── checkin.js          # Daily check-in       // need to be remove 
-│       ├── ai.js               # Claude AI integration
-│       └── emergency.js        # Emergency data
-│
-├── frontend/                   # React 18 + Tailwind CSS
-│   ├── src/
-│   │   ├── App.js              # Router setup
-│   │   ├── components/
-│   │   │   ├── Layout.jsx      # Nav + header + drawer
-│   │   │   └── LoadingSpinner.jsx
-│   │   ├── context/
-│   │   │   └── authStore.js    # Zustand auth state
-│   │   ├── pages/
-│   │   │   ├── Login.jsx
-│   │   │   ├── Register.jsx
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── HealthCard.jsx
-│   │   │   ├── EmergencyMode.jsx
-│   │   │   ├── DonorProfile.jsx
-│   │   │   ├── BloodRequest.jsx
-│   │   │   ├── HospitalFinder.jsx
-│   │   │   ├── MedicalExplainer.jsx
-│   │   │   ├── TreatmentTracker.jsx
-│   │   │   ├── Nutrition.jsx
-│   │   │   ├── Schemes.jsx
-│   │   │   ├── DailyCheckin.jsx
-│   │   │   └── Profile.jsx
-│   │   └── utils/api.js        # Axios API layer
-│   └── package.json
-│
-├── scripts/setup.js            # First-time setup
-└── package.json                # Root scripts
+① User authenticates via /api/auth/*
+        ↓
+② JWT stored client-side, attached automatically by Axios
+        ↓
+③ Feature pages call backend via utils/api.js
+        ↓
+④ Backend routes persist data through Mongoose
+        ↓
+⑤ Demo/mock fallback when MongoDB is unavailable
+```
+
+### 🖥️ System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         CLIENT LAYER                            │
+│              React Web App  /  Flutter Mobile App               │
+│      [Patient Flow]  [Donor Flow]  [QR Scan]  [AI Chat]  [Schemes] │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │  HTTPS / REST API
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      APPLICATION SERVER                         │
+│  Auth & RBAC  │  Health Card API  │  Donor Match API            │
+│  SOS/Location API  │  Scheme API  │  Consent & Log API          │
+└──────────┬──────────────────┬─────────────────────┬────────────┘
+           │                  │                      │
+           ▼                  ▼                      ▼
+┌──────────────────┐ ┌────────────────┐ ┌───────────────────────┐
+│    DATABASE      │ │   AI SERVICE   │ │   COMPLIANCE LAYER    │
+│  User / Health   │ │     LAYER      │ │   Consent Records     │
+│  Donor Reg.      │ │  LLM API       │ │   Access Logs (180d)  │
+│  Requests        │ │  (abstracted)  │ │   Breach Response     │
+│  Scheme Data     │ │  Prompt Guard  │ │   Role-Based Access   │
+└──────────────────┘ └────────────────┘ └───────────────────────┘
 ```
 
 ---
 
-## 📋 Prerequisites
+## 👥 User Roles
 
-- **Node.js** v20+ ([download](https://nodejs.org))
-- **npm** v10+ (comes with Node.js)
-- **MongoDB** v7+ ([download](https://mongodb.com/try/download/community)) *(optional — app runs in demo mode without it)*
-- **Anthropic API Key** ([get one](https://console.anthropic.com)) *(optional — AI features use mock responses without it)*
+| Role | Description |
+|---|---|
+| 🧑‍⚕️ `patient` | Core app user — health card, treatments, check-ins, scheme discovery |
+| 🩸 `donor` | Blood donor — registration, activation, blood request responses |
+
+> **Note:** There is no complete server-side admin authorization model implemented across all routes yet.
+
+---
+
+## 📄 Frontend Pages
+
+| 🔗 Route | 📄 Page | 📝 Purpose |
+|---|---|---|
+| `/login` | Login | User login with phone and password |
+| `/register` | Register | New user registration |
+| `/public-healthcard/:userId` | Public Health Card | Public QR-linked emergency card |
+| `/dashboard` | Dashboard | Main patient home and quick actions |
+| `/health-card` | Health Card | Card display and PDF export |
+| `/emergency` | Emergency Mode | Emergency numbers and nearby hospitals |
+| `/donor` | Donor Profile | Donor registration and status actions |
+| `/blood-request` | Blood Request | Request blood and search donors |
+| `/hospitals` | Hospital Finder | Nearby hospital lookup |
+| `/AI_explain` | Medical Explainer | AI explanation of terms and reports |
+| `/treatments` | Treatment Tracker | Create and manage treatments |
+| `/schemes` | Schemes | Search support schemes |
+| `/profile` | Profile | Account/profile settings |
+| `/request-help` | Request Help | Submit a financial help/donation request |
+| `/admin-donations` | Admin Donations | Approve submitted help requests |
+
+---
+
+## 🔌 Backend API Reference
+
+**Base URL:**
+```
+http://localhost:5000/api
+```
+
+**Protected routes require:**
+```
+Authorization: Bearer <token>
+```
+
+### 🟢 Health
+| Method | Route | Purpose |
+|---|---|---|
+| `GET` | `/health` | API health check |
+
+### 🔐 Auth
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/auth/register` | Register patient or donor |
+| `POST` | `/auth/login` | Login and receive JWT |
+| `GET` | `/auth/me` | Get current authenticated user |
+| `PUT` | `/auth/profile` | Update user profile |
+| `PUT` | `/auth/donor-profile` | Update donor profile |
+
+### 🧑‍⚕️ Patient
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/patient` | Create or update patient profile |
+| `GET` | `/patient/:userId` | Get patient profile by user ID |
+
+### 🪪 Health Card
+| Method | Route | Purpose |
+|---|---|---|
+| `GET` | `/healthcard/:userId` | Get health card data |
+| `GET` | `/healthcard/public/:userId` | Public emergency-safe card payload |
+
+### 🩸 Donors
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/donors/register` | Register or update donor profile |
+| `POST` | `/donors/toggle-active` | Enable or disable active donor status |
+| `GET` | `/donors/search` | Search donors by blood group, city, or location |
+| `PUT` | `/donors/availability` | Update donor availability |
+
+### 🏥 Hospitals
+| Method | Route | Purpose |
+|---|---|---|
+| `GET` | `/hospitals/nearby` | Find nearby hospitals using `lat` and `lng` |
+
+### 🆘 Blood Requests
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/blood-requests` | Create a blood request |
+| `GET` | `/blood-requests` | Get current user's requests |
+| `GET` | `/blood-requests/active` | List active requests for donors |
+| `POST` | `/blood-requests/:id/respond` | Respond to a blood request |
+
+### 💊 Treatments
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/treatments` | Create treatment |
+| `GET` | `/treatments` | Get treatments |
+| `PUT` | `/treatments/:id` | Update treatment |
+| `DELETE` | `/treatments/:id` | Delete treatment |
+
+### 🤖 AI
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/ai/explain-term` | Explain a medical term |
+| `POST` | `/ai/explain-consent` | Explain consent/report text |
+
+### 🚨 Emergency
+| Method | Route | Purpose |
+|---|---|---|
+| `GET` | `/emergency/nearest` | Return emergency guidance payload |
+| `GET` | `/emergency/helplines` | Return emergency helpline list |
+
+### 🏛️ Schemes
+| Method | Route | Purpose |
+|---|---|---|
+| `GET` | `/schemes` | Search schemes using filters |
+| `POST` | `/schemes/check-eligibility` | Evaluate eligibility and ranking |
+
+### 💰 Donations / Help Requests
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/donations` | Submit a help request |
+| `GET` | `/donations` | Get approved requests (or all with `?all=true`) |
+| `PATCH` | `/donations/:id/approve` | Approve a help request |
+
+---
+
+## ⚙️ Environment Variables
+
+### 🖥️ Backend
+
+| Variable | Purpose |
+|---|---|
+| `PORT` | Backend port |
+| `NODE_ENV` | Runtime environment |
+| `MONGO_URI` | MongoDB connection string |
+| `JWT_SECRET` | JWT signing secret |
+| `JWT_EXPIRE` | JWT lifetime |
+| `GROQ_API_KEY` | AI explainer integration |
+| `CLIENT_URL` | Preferred CORS origin |
+| `SMTP_HOST` | Email utility host |
+| `SMTP_PORT` | Email utility port |
+| `SMTP_USER` | Email username |
+| `SMTP_PASS` | Email password |
+| `GOOGLE_MAPS_API_KEY` | Present in `.env`, not actively used by current backend |
+| `RATE_LIMIT_WINDOW_MS` | API rate-limit window |
+| `RATE_LIMIT_MAX` | API rate-limit max requests |
+
+### 🎨 Frontend
+
+| Variable | Purpose |
+|---|---|
+| `REACT_APP_API_URL` | Frontend backend base URL |
 
 ---
 
 ## 🚀 Quick Start
 
-### Step 1: Clone / Download
+### 📋 Prerequisites
 
-```bash
-# If using git
-git clone https://github.com/yourorg/carecell-network.git
-cd carecell-network
+- Node.js
+- npm
+- MongoDB *(optional — some flows work without it)*
 
-# Or extract the downloaded zip and cd into the folder
-cd carecell
-```
-
-### Step 2: Run Setup
-
-```bash
-node scripts/setup.js
-```
-
-This creates `backend/.env` and `frontend/.env` from examples.
-
-### Step 3: Install Dependencies
+### 📦 Install Dependencies
 
 ```bash
 npm run install:all
 ```
 
-This installs all backend + frontend packages (~2-3 minutes).
+### 🔧 Create Environment Files
 
-### Step 4: Configure API Keys (Optional but Recommended)
-
-Edit `backend/.env`:
-
+**Backend** (`backend/.env`):
 ```env
-# For AI features (medical term explainer, buddy check-in):
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-
-# For persistent data (app works without this — uses in-memory demo data):
+PORT=5000
+NODE_ENV=development
 MONGO_URI=mongodb://localhost:27017/carecell
-
-# Change this in production!
-JWT_SECRET=your-super-secret-key-min-32-chars
+JWT_SECRET=change_this_secret
+JWT_EXPIRE=30d
+GROQ_API_KEY=your_groq_api_key
+CLIENT_URL=http://localhost:3000
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=100
 ```
 
-### Step 5: Start Development Servers
+**Frontend** (`frontend/.env`):
+```env
+REACT_APP_API_URL=http://localhost:5000/api
+```
+
+### ▶️ Start Development
 
 ```bash
 npm run dev
 ```
 
 This starts:
-- **Backend API** → http://localhost:5000
-- **Frontend App** → http://localhost:3000
-
-### Step 6: Open App
-
-Navigate to **http://localhost:3000**
-
-Click **"Try Demo / डेमो देखें"** to explore without registering.
+- 🎨 **Frontend** at `http://localhost:3000`
+- ⚙️ **Backend** at `http://localhost:5000`
 
 ---
 
-## ⚙️ Environment Variables
+## 🎭 Demo-Friendly Behavior
 
-### Backend (`backend/.env`)
+CareCell includes partial demo support out of the box:
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PORT` | No | API port (default: 5000) |
-| `NODE_ENV` | No | `development` or `production` |
-| `MONGO_URI` | No* | MongoDB connection string |
-| `JWT_SECRET` | **Yes** | Secret for JWT tokens (min 32 chars) |
-| `JWT_EXPIRE` | No | Token expiry (default: 30d) |
-| `ANTHROPIC_API_KEY` | No* | For AI medical explainer + check-in |
-| `CLIENT_URL` | No | Frontend URL for CORS (default: http://localhost:3000) |
-| `SMTP_HOST` | No | For email notifications |
-| `SMTP_USER` | No | Email username |
-| `SMTP_PASS` | No | Email app password |
+- ✅ MongoDB connection failure does **not** crash the backend
+- ✅ Some routes fall back to in-memory/demo responses
+- ✅ Login UI includes a demo path
+- ✅ Emergency helplines remain usable regardless of backend state
 
-*App works in demo mode without these but has limited persistence.
-
-### Frontend (`frontend/.env`)
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `REACT_APP_API_URL` | No | Backend URL (default: http://localhost:5000/api) |
-| `REACT_APP_GOOGLE_MAPS_KEY` | No | For embedded maps directions |
+> This is demo-friendly but not a full offline-first PWA implementation.
 
 ---
 
-## 📡 API Documentation
+## 🔒 Security
 
-### Base URL
-`http://localhost:5000/api`
+### ✅ Implemented
+- JWT authentication
+- Password hashing with `bcryptjs`
+- API rate limiting
+- `helmet` security headers
+- MongoDB query sanitization
+- Request logging with `morgan`
 
-### Authentication
-All protected routes require: `Authorization: Bearer <token>`
-
-### Endpoints
-
-#### 🔐 Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/register` | Register new user |
-| POST | `/auth/login` | Login |
-| GET | `/auth/me` | Get current user |
-| PUT | `/auth/profile` | Update profile |
-
-**Register payload:**
-```json
-{
-  "name": "Ramesh Kumar",
-  "phone": "9876543210",
-  "password": "securepass123",
-  "role": "patient",
-  "language": "hindi"
-}
-```
-
-#### 🪪 Patient Health Card
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/patients/health-card` | Get health card |
-| POST | `/patients/health-card` | Create/update health card |
-| GET | `/patients/qr/:patientId` | Public QR scan endpoint |
-
-**Save Health Card payload:**
-```json
-{
-  "bloodGroup": "A",
-  "rhFactor": "+",
-  "cancerType": "Breast Cancer",
-  "cancerStage": "Stage II",
-  "allergies": ["Penicillin", "Shellfish"],
-  "emergencyContacts": [
-    { "name": "Priya Kumar", "phone": "9876543211", "relation": "Wife" }
-  ],
-  "hospitalName": "Tata Memorial Hospital",
-  "doctorName": "Dr. R. Badwe"
-}
-```
-
-#### 🩸 Blood Donors
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/donors/register` | Register as donor |
-| GET | `/donors/search` | Search donors (params: bloodGroup, radius, type) |
-| PUT | `/donors/availability` | Update availability |
-
-#### 🏥 Hospitals
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/hospitals` | List hospitals (params: search, type, costLevel, radius, opdToday) |
-| GET | `/hospitals/:id` | Get hospital details |
-| GET | `/hospitals/emergency/nearest` | Nearest for emergency |
-
-#### 💊 Treatments
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/treatments` | Add treatment |
-| GET | `/treatments` | List treatments |
-| PUT | `/treatments/:id` | Update treatment |
-| DELETE | `/treatments/:id` | Delete treatment |
-
-#### 😊 Daily Check-in
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/checkin` | Submit check-in |
-| GET | `/checkin/history` | Get history |
-
-**Check-in payload:**
-```json
-{
-  "wellbeing": 3,
-  "symptoms": {
-    "fever": { "present": true, "severity": "high" },
-    "vomiting": { "present": false },
-    "bleeding": { "present": false }
-  },
-  "notes": "Feeling tired today"
-}
-```
-
-#### 🤖 AI Features
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/ai/explain-term` | Explain medical term in Hindi |
-| POST | `/ai/explain-consent` | Simplify consent form text |
-| POST | `/ai/buddy-assessment` | AI check-in assessment |
+### ⚠️ Production Caveats
+- Donation approval endpoints are **not** protected by role-based server authorization
+- CORS includes a permissive fallback in `backend/server.js`
 
 ---
 
-## 📱 Frontend Pages
+## 🚢 Deployment
 
-| Route | Page | Description |
-|-------|------|-------------|
-| `/login` | Login | Phone + password login |
-| `/register` | Register | New user registration |
-| `/dashboard` | Dashboard | Home with quick actions + upcoming treatments |
-| `/health-card` | Health Card | Create/edit digital ID + QR code |
-| `/emergency` | Emergency Mode | One-tap hospital/ambulance navigation |
-| `/checkin` | Daily Check-in | 3-step symptom tracker with AI risk assessment |
-| `/blood-request` | Blood Request | Create requests + search donors |
-| `/donor` | Donor Profile | Register as blood/platelet donor |
-| `/hospitals` | Hospital Finder | Search oncology hospitals with filters |
-| `/explain` | AI Explainer | Hindi medical term & consent form explainer |
-| `/treatments` | Treatment Tracker | Calendar + CRUD for treatments |
-| `/nutrition` | Nutrition | Cancer-specific diet plans in Hindi |
-| `/schemes` | Financial Help | Government scheme finder by state |
-| `/profile` | Profile | Account settings + logout |
-
----
-
-## 🚀 Deployment
-
-### Backend (Node.js) — Railway / Render / Heroku
-
+### ⚙️ Backend
 ```bash
-# Set environment variables in dashboard:
-PORT=5000
-NODE_ENV=production
-MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/carecell
-JWT_SECRET=your-production-secret-min-32-chars
-ANTHROPIC_API_KEY=sk-ant-your-key
-CLIENT_URL=https://your-frontend-domain.com
+npm --prefix backend start
 ```
 
-### Frontend (React) — Vercel / Netlify
-
+### 🎨 Frontend
 ```bash
-# Build command:
-npm run build --prefix frontend
+npm --prefix frontend build
+```
+Deploy `frontend/build` to any static host and point `REACT_APP_API_URL` to the backend base URL.
 
-# Publish directory:
-frontend/build
+---
 
-# Environment variables:
-REACT_APP_API_URL=https://your-backend-domain.com/api
+## 📈 Scaling Notes
+
+For production growth toward larger traffic:
+
+- 📊 Add proper MongoDB indexes for donor, request, and scheme queries
+- 🗺️ Move distance filtering to geospatial DB queries
+- 🔐 Tighten authorization around admin-style actions
+- 📡 Add monitoring and structured error tracking
+- ⚡ Add caching for AI-heavy and search-heavy flows
+
+---
+
+## ⚠️ Known Gaps
+
+| Gap | Details |
+|---|---|
+| 🥗 Nutrition routes | Frontend has a Nutrition page; backend does not mount nutrition routes |
+| 🤖 AI buddy assessment | Frontend references `POST /api/ai/buddy-assessment`; backend doesn't implement it |
+| 📄 `.env.example` | `scripts/setup.js` expects a backend env example file that is not present |
+
+---
+
+## 🆘 Emergency Numbers
+
+```
+🚑  Ambulance            →  108
+🆘  National Emergency   →  112
+🎗️  Cancer Helpline      →  1800-11-1234
 ```
 
-### Docker (Full Stack)
+---
 
-```bash
-# Add docker-compose.yml for containerized deployment
-docker-compose up -d
-```
+<div align="center">
 
-### MongoDB Atlas (Cloud)
+## 🤝 Support
 
-1. Create free cluster at [mongodb.com/atlas](https://mongodb.com/atlas)
-2. Create database user + get connection string
-3. Set `MONGO_URI=mongodb+srv://...` in backend `.env`
+For repository support, open an [issue](https://github.com).
+
+<br/>
 
 ---
 
-## 📈 Scaling for 10,000 Users
+*Built with ❤️ for cancer patients across India*
 
-The app is architected for production scale:
+**🎗️ कैंसर मरीजों के लिए प्यार से बनाया गया 🎗️**
 
-### Database
-- **MongoDB Atlas M10+** cluster with auto-scaling
-- **Indexes** on: `User.phone`, `User.donorProfile.bloodGroup`, `BloodRequest.status+location`
-- **Connection pooling**: `maxPoolSize: 10` (increase to 50+ for production)
-
-### API
-- **Rate limiting**: 100 req/15 min per IP (configurable)
-- **Helmet.js** security headers
-- **Compression** middleware (gzip)
-- **PM2** for process management:
-  ```bash
-  npm install -g pm2
-  pm2 start backend/server.js --name carecell-api -i max
-  ```
-
-### Frontend
-- **React lazy loading** — each page code-splits automatically
-- **CDN deployment** on Vercel/Cloudflare
-- **Service Worker** for offline support (add PWA manifest)
-
-### Caching (Add for production)
-```javascript
-// Redis caching for hospital/scheme data
-npm install ioredis
-// Cache hospital list for 1 hour
-// Cache scheme list for 24 hours
-```
-
-### Monitoring
-- **Morgan** request logging (already included)
-- Add **Sentry** for error tracking
-- Add **MongoDB Atlas monitoring** for slow queries
-
----
-
-## 🛠️ Tech Stack
-
-### Backend
-| Package | Version | Purpose |
-|---------|---------|---------|
-| express | 4.19 | Web framework |
-| mongoose | 8.5 | MongoDB ODM |
-| jsonwebtoken | 9.0 | JWT authentication |
-| bcryptjs | 2.4 | Password hashing |
-| qrcode | 1.5 | QR code generation |
-| helmet | 7.1 | Security headers |
-| express-rate-limit | 7.4 | Rate limiting |
-| express-mongo-sanitize | 2.2 | NoSQL injection prevention |
-| compression | 1.7 | Gzip responses |
-| dotenv | 16.4 | Environment variables |
-
-### Frontend
-| Package | Version | Purpose |
-|---------|---------|---------|
-| react | 18.3 | UI framework |
-| react-router-dom | 6.26 | Routing |
-| zustand | 4.5 | State management |
-| framer-motion | 11.3 | Animations |
-| axios | 1.7 | HTTP client |
-| react-hot-toast | 2.4 | Notifications |
-| qrcode.react | 3.1 | QR code display |
-| react-icons | 5.3 | Icon library |
-| date-fns | 3.6 | Date utilities |
-| tailwindcss | 3.4 | Utility CSS |
-| html2canvas | 1.4 | Health card download |
-
-### AI
-- **Anthropic Claude** (claude-sonnet-4-20250514) for:
-  - Medical term explanation in Hindi
-  - Consent form simplification
-  - Daily check-in assessment
-
----
-
-## 🔒 Security Features
-
-- ✅ JWT authentication with 30-day expiry
-- ✅ Bcrypt password hashing (salt rounds: 12)
-- ✅ Rate limiting (100 req/15min, 20 for auth)
-- ✅ MongoDB query sanitization (prevents NoSQL injection)
-- ✅ Helmet.js security headers
-- ✅ CORS restricted to frontend origin
-- ✅ Input validation with express-validator
-- ✅ Request body size limit (10MB)
-- ✅ No full records shared without patient consent
-
----
-
-## 🌐 Offline Support
-
-These features work without internet:
-- Patient health card (stored locally after first load)
-- Treatment reminders (stored in device)
-- Diet guidance (downloadable offline pages)
-- Emergency phone numbers (hardcoded as fallback)
-- Basic AI explanations (mock responses when API unavailable)
-
----
-
-## 📞 Support
-
-**Emergency (India):** 108 (Ambulance), 112 (National Emergency)  
-**Cancer Helpline:** 1800-11-1234  
-
----
-
-## 📄 License
-
-MIT License — Free to use, modify, and distribute.
-
----
-
-*Built with ❤️ for cancer patients across India*  
-*कैंसर मरीजों के लिए प्यार से बनाया गया*
+</div>

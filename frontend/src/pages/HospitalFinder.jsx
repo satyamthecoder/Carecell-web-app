@@ -372,7 +372,6 @@ export default function HospitalFinder() {
   const [visibleCount, setVisibleCount] = useState(10);
   const cache = useRef({});
 
-  // 📍 LOCATION
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -387,7 +386,6 @@ export default function HospitalFinder() {
     );
   }, []);
 
-  // 🔥 SEARCH DEBOUNCE
   useEffect(() => {
     if (!location) return;
 
@@ -398,32 +396,28 @@ export default function HospitalFinder() {
     return () => clearTimeout(delay);
   }, [search, location]);
 
-  // 🔥 FETCH
   const fetchHospitals = async () => {
     try {
       setLoading(true);
 
-      // ✅ CACHE
       if (cache.current[search]) {
         setHospitals(cache.current[search]);
-        setVisibleCount(10); // 🔥 RESET
+        setVisibleCount(10);
         setLoading(false);
         return;
       }
 
-      const params = {
+      const data = await hospitalAPI.getHospitals({
         lat: location.lat,
         lng: location.lng,
         search
-      };
+      });
 
-      const data = await hospitalAPI.getHospitals(params);
       const result = data.hospitals || [];
-
       cache.current[search] = result;
 
       setHospitals(result);
-      setVisibleCount(10); // 🔥 RESET AFTER FETCH
+      setVisibleCount(10);
 
     } catch (err) {
       console.error(err);
@@ -439,114 +433,120 @@ export default function HospitalFinder() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 pb-24">
+   // <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-blue-150 pb-24">
+<div className="min-h-screen bg-gradient-to-br from-[#c5c5f5] via-white to-[#dec7f7] pb-24">
+      {/* 🔥 HEADER WITH GRADIENT */}
+        <div className="bg-gradient-to-r from-[#C4B5FD] via-[#D8B4FE] to-[#EDE9FE] p-4 pb-6 rounded-b-3xl shadow-md">
 
-      {/* 🔥 STICKY SEARCH */}
-      <div className="sticky top-0 z-20 bg-white p-3 shadow-sm">
+        <h2 className="text-purple-900 font-semibold text-lg mb-3">
+          Hospital Finder
+        </h2>
+
+        {/* SEARCH BAR */}
         <div className="flex gap-2">
           <div className="flex-1 relative">
             <FiMapPin className="absolute left-3 top-3 text-gray-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search hospital or city..."
-              className="w-full pl-9 p-3 rounded-xl border focus:ring-2 focus:ring-blue-400 outline-none"
+              placeholder="Search city, hospital..."
+              className="w-full pl-9 p-3 rounded-xl border-0 shadow outline-none"
             />
           </div>
 
-          <button className="px-4 rounded-xl bg-gray-200">
+          <button className="px-3 rounded-xl bg-white text-blue-600">
             <FiFilter />
+          </button>
+
+          {/* UI Search Button */}
+          <button className="px-4 rounded-xl bg-white text-blue-600 font-semibold">
+            Search
           </button>
         </div>
       </div>
 
       <div className="p-4 space-y-4">
 
-        {/* 🔄 LOADING */}
         {loading ? (
           <LoadingSpinner text="Finding hospitals..." />
         ) : (
           <>
-            {/* 🔢 COUNT */}
             <p className="text-gray-500 text-sm">
               {hospitals.length} hospitals found
             </p>
 
-            {/* ❌ EMPTY */}
-            {hospitals.length === 0 && (
-              <div className="text-center bg-white p-6 rounded-2xl shadow">
-                No hospitals found 😕 <br />
-                <span className="text-sm text-gray-400">
-                  Try a different search
-                </span>
-              </div>
-            )}
+            {/* GRID */}
+            <div className="grid grid-cols-2 gap-3">
 
-            {/* 🔥 LIST (FIXED) */}
-            <div className="space-y-4">
               {hospitals.slice(0, visibleCount).map((h, i) => (
                 <motion.div
                   key={h._id || i}
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="bg-white rounded-3xl p-4 shadow-md"
+                  className="bg-white rounded-2xl p-3 shadow-md border"
                 >
 
                   {/* HEADER */}
                   <div className="flex justify-between items-start">
+
                     <div>
-                      <h4 className="font-semibold text-base">{h.name}</h4>
-                      <p className="text-sm text-gray-500">
-                        {h.city}, {h.state}
+                      <h4 className="text-sm font-semibold line-clamp-1">
+                        {h.name}
+                      </h4>
+
+                      <p className="text-xs text-gray-500">
+                        {h.city}
+                      </p>
+
+                      <p className="text-xs mt-1 text-gray-400">
+                        📍 {h.distance?.toFixed(1)} km away
                       </p>
                     </div>
 
-                    {/* ⭐ RATING */}
-                    {h.rating && (
-                      <div className="flex items-center gap-1 text-yellow-500 text-sm">
-                        <FiStar />
-                        {h.rating}
-                      </div>
-                    )}
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                      🏥
+                    </div>
                   </div>
 
-                  {/* 📍 DISTANCE */}
-                  <div className="mt-2">
-                    <span className="inline-block bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full">
-                      📍 {h.distance?.toFixed(2)} km away
-                    </span>
-                  </div>
+                  {/* RATING */}
+                  {h.rating && (
+                    <div className="flex items-center gap-1 text-yellow-500 text-xs mt-2">
+                      <FiStar size={12} />
+                      {h.rating}
+                    </div>
+                  )}
 
                   {/* ACTIONS */}
-                  <div className="flex gap-2 mt-4">
+                  <div className="flex gap-2 mt-3">
                     <a
                       href={`tel:${h.phone || ""}`}
-                      className="flex-1 text-center bg-blue-500 text-white py-2 rounded-xl text-sm"
+                      className="flex-1 bg-blue-100 text-blue-600 py-1 rounded-lg text-xs text-center"
                     >
                       Call
                     </a>
 
                     <button
                       onClick={() => openMaps(h)}
-                      className="flex-1 bg-green-500 text-white py-2 rounded-xl text-sm flex items-center justify-center gap-1"
+                      className="flex-1 bg-green-500 text-white py-1 rounded-lg text-xs flex items-center justify-center gap-1"
                     >
-                      <FiNavigation size={14} />
-                      Directions
+                      <FiNavigation size={12} />
+                      Go
                     </button>
                   </div>
 
                 </motion.div>
               ))}
+
             </div>
 
-            {/* 🔥 LOAD MORE */}
+            {/* LOAD MORE */}
             {visibleCount < hospitals.length && (
               <button
                 onClick={() => setVisibleCount(visibleCount + 10)}
-                className="w-full bg-blue-500 text-white py-3 rounded-xl mt-4"
+                className="w-full bg-purple-400 text-white py-3 rounded-xl mt-4"
               >
-                Load More ({hospitals.length - visibleCount} more)
+                Load More
               </button>
             )}
 
@@ -554,11 +554,11 @@ export default function HospitalFinder() {
         )}
       </div>
 
-      {/* 🔥 FLOAT BUTTON */}
+      {/* FLOAT BUTTON */}
       <div className="fixed bottom-6 right-4 z-30">
         <motion.button
           whileTap={{ scale: 0.85 }}
-          className="w-14 h-14 bg-blue-500 text-white rounded-full shadow-xl flex items-center justify-center"
+          className="w-14 h-14 bg-purple-500 text-white rounded-full shadow-xl flex items-center justify-center"
         >
           <FiFilter size={20} />
         </motion.button>

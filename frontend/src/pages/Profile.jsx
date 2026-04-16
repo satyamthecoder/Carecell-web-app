@@ -467,8 +467,6 @@ export default function Profile() {
 
 
 //new code for this with both donor and paitens profile
-
-
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { FiEdit2, FiSave, FiLogOut } from "react-icons/fi";
@@ -481,8 +479,6 @@ export default function Profile() {
   const navigate = useNavigate();
   const { user, logout, updateUser } = useAuthStore();
 
-  const isDonor = user?.role === "donor"; // 🔥 NEW
-
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -491,33 +487,19 @@ export default function Profile() {
     phone: "",
     dob: "",
     gender: "",
-
     address: "",
     city: "",
     state: "",
     pincode: "",
-
     bloodGroup: "",
     diseases: [],
     allergies: [],
     medications: [],
-    diseaseStage: "",
-    currentTreatment: "",
-    hospitalName: "",
-
-    hasSurgeries: false,
     surgeries: "",
-
-    emergencyContact: {
-      name: "",
-      relation: "",
-      phone: ""
-    },
-
+    emergencyContact: { name: "", relation: "", phone: "" },
     consent: false
   });
 
-  // 🔥 SAFE ARRAY
   const safeArray = (val) => {
     if (Array.isArray(val)) return val;
     if (typeof val === "string")
@@ -525,9 +507,9 @@ export default function Profile() {
     return [];
   };
 
-  // 🔥 LOAD PROFILE (ONLY FOR PATIENT)
+  // 🔥 FIXED: Proper sync
   useEffect(() => {
-    if (!user?._id || isDonor) return;
+    if (!user?._id) return;
 
     const load = async () => {
       try {
@@ -536,44 +518,43 @@ export default function Profile() {
         if (res?.patient) {
           const p = res.patient;
 
-          setForm({
+          setForm(prev => ({
+            ...prev,
             ...p,
-            name: user.name || p.name || "",
-            phone: user.phone || p.phone || "",
-
+            name: user?.name || "",
+            phone: user?.phone || "",
             diseases: safeArray(p.diseases),
             allergies: safeArray(p.allergies),
             medications: safeArray(p.medications),
-
             emergencyContact: p.emergencyContact || {
               name: "",
               relation: "",
               phone: ""
             }
-          });
+          }));
         } else {
+          // fallback if no patient profile yet
           setForm(prev => ({
             ...prev,
-            name: user.name,
-            phone: user.phone
+            name: user?.name || "",
+            phone: user?.phone || ""
           }));
         }
       } catch {
+        // fallback if API fails
         setForm(prev => ({
           ...prev,
-          name: user.name,
-          phone: user.phone
+          name: user?.name || "",
+          phone: user?.phone || ""
         }));
       }
     };
 
     load();
-  }, [user, isDonor]);
+  }, [user]);
 
-  // 🔥 SAVE (ONLY PATIENT)
   const handleSave = async () => {
     if (!form.consent) return toast.error("Accept declaration");
-    if (!form.gender) return toast.error("Select gender");
 
     setSaving(true);
 
@@ -603,184 +584,237 @@ export default function Profile() {
     }
   };
 
-  // 🔥 COMPLETENESS
-  const getCompleteness = () => {
-    let total = 10;
-    let filled = 0;
-
-    if (form.name) filled++;
-    if (form.phone) filled++;
-    if (form.dob) filled++;
-    if (form.gender) filled++;
-    if (form.address) filled++;
-    if (form.bloodGroup) filled++;
-    if (form.diseases.length) filled++;
-    if (form.allergies.length) filled++;
-    if (form.emergencyContact?.phone) filled++;
-    if (form.consent) filled++;
-
-    return Math.round((filled / total) * 100);
-  };
-
   return (
-    <div className="page-container space-y-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-purple-100 p-4 flex justify-center">
 
-      {/* HEADER */}
-      <div className="bg-gradient-to-r from-teal-500 to-blue-500 text-white p-5 rounded-2xl">
-        <h2 className="text-lg font-bold">{user?.name}</h2>
-        <p>{user?.phone}</p>
-        <p className="text-xs mt-1">
-          {isDonor ? "Donor Profile" : `Profile ${getCompleteness()}% complete`}
-        </p>
-      </div>
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden">
 
-      {/* 🔥 DONOR VIEW */}
-      {isDonor ? (
-        <div className="card p-4">
-          <h3 className="font-bold mb-2">🩸 Donor Profile</h3>
-
-          <p><b>Role:</b> Donor</p>
-          <p><b>Name:</b> {user?.name}</p>
-          <p><b>Phone:</b> {user?.phone}</p>
-
-          <p className="text-xs text-gray-500 mt-2">
-            Donor features coming next (availability, blood group, etc.)
-          </p>
+        {/* HERO */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-5 text-white flex justify-between items-center">
+          <div>
+            <h2 className="font-semibold">{user?.name}</h2>
+            <p className="text-sm opacity-80">{user?.phone}</p>
+            <p className="text-xs opacity-70">patient</p>
+          </div>
+          <div className="w-12 h-12 bg-white/30 rounded-full flex items-center justify-center font-bold">
+            {user?.name?.charAt(0)}
+          </div>
         </div>
-      ) : (
-        <>
-          {/* PATIENT PROFILE */}
-          <div className="card">
 
-            <div className="flex justify-between mb-3">
-              <h3 className="font-bold">Patient Profile</h3>
-              <button onClick={() => setEditing(!editing)}>
-                <FiEdit2 />
-              </button>
-            </div>
+        <div className="p-5 space-y-5">
+
+          <h2 className="text-center font-semibold text-lg">
+            welcome to CareCell
+          </h2>
+
+          {/* PROFILE CARD */}
+          <div className="bg-gray-50 rounded-2xl p-4 relative shadow">
+
+            <button
+              onClick={() => setEditing(!editing)}
+              className="absolute right-3 top-3 text-blue-500"
+            >
+              <FiEdit2 />
+            </button>
 
             {editing ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
 
-                <input value={form.name} disabled className="input-field bg-gray-100" />
-                <input value={form.phone} disabled className="input-field bg-gray-100" />
+                <Field label="Name">
+                  <input value={form.name} disabled className="input-field bg-gray-100" />
+                </Field>
 
-                <input type="date" className="input-field"
-                  value={form.dob || ""}
-                  onChange={e => setForm({ ...form, dob: e.target.value })}
-                />
+                <Field label="Phone">
+                  <input value={form.phone} disabled className="input-field bg-gray-100" />
+                </Field>
 
-                <select className="input-field"
-                  value={form.gender}
-                  onChange={e => setForm({ ...form, gender: e.target.value })}
-                >
-                  <option value="">Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
+                <Field label="Date of Birth">
+                  <input
+                    type="date"
+                    value={form.dob || ""}
+                    onChange={e => setForm({ ...form, dob: e.target.value })}
+                    className="input-field"
+                  />
+                </Field>
 
-                <input placeholder="Address" className="input-field"
-                  value={form.address}
-                  onChange={e => setForm({ ...form, address: e.target.value })}
-                />
+                <Field label="Gender">
+                  <select
+                    value={form.gender}
+                    onChange={e => setForm({ ...form, gender: e.target.value })}
+                    className="input-field"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </Field>
 
-                <input placeholder="City" className="input-field"
-                  value={form.city}
-                  onChange={e => setForm({ ...form, city: e.target.value })}
-                />
+                <Field label="Blood Group">
+                  <select
+                    value={form.bloodGroup}
+                    onChange={e => setForm({ ...form, bloodGroup: e.target.value })}
+                    className="input-field"
+                  >
+                    <option value="">Select</option>
+                    <option>A+</option>
+                    <option>B+</option>
+                    <option>O+</option>
+                    <option>AB+</option>
+                    <option>A-</option>
+                    <option>B-</option>
+                    <option>O-</option>
+                    <option>AB-</option>
+                  </select>
+                </Field>
 
-                <input placeholder="State" className="input-field"
-                  value={form.state}
-                  onChange={e => setForm({ ...form, state: e.target.value })}
-                />
+                <Field label="Address">
+                  <input value={form.address}
+                    onChange={e => setForm({ ...form, address: e.target.value })}
+                    className="input-field"
+                  />
+                </Field>
 
-                <input placeholder="Pincode" className="input-field"
-                  value={form.pincode}
-                  onChange={e => setForm({ ...form, pincode: e.target.value })}
-                />
+                <Field label="City">
+                  <input value={form.city}
+                    onChange={e => setForm({ ...form, city: e.target.value })}
+                    className="input-field"
+                  />
+                </Field>
 
-                <input placeholder="Blood Group" className="input-field"
-                  value={form.bloodGroup}
-                  onChange={e => setForm({ ...form, bloodGroup: e.target.value })}
-                />
+                <Field label="State">
+                  <input value={form.state}
+                    onChange={e => setForm({ ...form, state: e.target.value })}
+                    className="input-field"
+                  />
+                </Field>
 
-                <input placeholder="Diseases (comma separated)" className="input-field"
-                  value={form.diseases.join(", ")}
-                  onChange={e => setForm({
-                    ...form,
-                    diseases: e.target.value.split(",").map(i => i.trim()).filter(Boolean)
-                  })}
-                />
+                <Field label="Pincode">
+                  <input value={form.pincode}
+                    onChange={e => setForm({ ...form, pincode: e.target.value })}
+                    className="input-field"
+                  />
+                </Field>
 
-                <input placeholder="Allergies" className="input-field"
-                  value={form.allergies.join(", ")}
-                  onChange={e => setForm({
-                    ...form,
-                    allergies: e.target.value.split(",").map(i => i.trim()).filter(Boolean)
-                  })}
-                />
+                <Field label="Diseases">
+                  <input value={form.diseases.join(", ")}
+                    onChange={e => setForm({
+                      ...form,
+                      diseases: e.target.value.split(",").map(i => i.trim()).filter(Boolean)
+                    })}
+                    className="input-field"
+                  />
+                </Field>
 
-                <input placeholder="Emergency Name" className="input-field"
-                  value={form.emergencyContact.name}
-                  onChange={e => setForm({
-                    ...form,
-                    emergencyContact: { ...form.emergencyContact, name: e.target.value }
-                  })}
-                />
+                <Field label="Allergies">
+                  <input value={form.allergies.join(", ")}
+                    onChange={e => setForm({
+                      ...form,
+                      allergies: e.target.value.split(",").map(i => i.trim()).filter(Boolean)
+                    })}
+                    className="input-field"
+                  />
+                </Field>
 
-                <input placeholder="Relation" className="input-field"
-                  value={form.emergencyContact.relation}
-                  onChange={e => setForm({
-                    ...form,
-                    emergencyContact: { ...form.emergencyContact, relation: e.target.value }
-                  })}
-                />
+                <Field label="Medications">
+                  <input value={form.medications.join(", ")}
+                    onChange={e => setForm({
+                      ...form,
+                      medications: e.target.value.split(",").map(i => i.trim()).filter(Boolean)
+                    })}
+                    className="input-field"
+                  />
+                </Field>
 
-                <input placeholder="Emergency Phone" className="input-field"
-                  value={form.emergencyContact.phone}
-                  onChange={e => setForm({
-                    ...form,
-                    emergencyContact: { ...form.emergencyContact, phone: e.target.value }
-                  })}
-                />
+                <Field label="Past Surgeries">
+                  <input value={form.surgeries}
+                    onChange={e => setForm({ ...form, surgeries: e.target.value })}
+                    className="input-field"
+                  />
+                </Field>
+
+                <Field label="Emergency Contact Name">
+                  <input value={form.emergencyContact.name}
+                    onChange={e => setForm({
+                      ...form,
+                      emergencyContact: { ...form.emergencyContact, name: e.target.value }
+                    })}
+                    className="input-field"
+                  />
+                </Field>
+
+                <Field label="Emergency Contact Phone">
+                  <input value={form.emergencyContact.phone}
+                    onChange={e => setForm({
+                      ...form,
+                      emergencyContact: { ...form.emergencyContact, phone: e.target.value }
+                    })}
+                    className="input-field"
+                  />
+                </Field>
 
                 <label className="flex gap-2 text-sm">
-                  <input type="checkbox"
+                  <input
+                    type="checkbox"
                     checked={form.consent}
                     onChange={e => setForm({ ...form, consent: e.target.checked })}
                   />
                   I agree to share medical info
                 </label>
 
-                <button onClick={handleSave} className="btn-primary w-full">
+                <button
+                  onClick={handleSave}
+                  className="w-full bg-blue-500 text-white py-2 rounded-xl flex justify-center gap-2"
+                >
                   <FiSave /> {saving ? "Saving..." : "Save"}
                 </button>
 
               </div>
             ) : (
-              <div className="text-sm space-y-1">
+              <div className="text-sm space-y-2">
+                <p><b>Name:</b> {form.name}</p>
+                <p><b>Phone:</b> {form.phone}</p>
                 <p><b>Gender:</b> {form.gender}</p>
                 <p><b>City:</b> {form.city}</p>
                 <p><b>Blood Group:</b> {form.bloodGroup}</p>
-                <p><b>Diseases:</b> {form.diseases.join(", ") || "None"}</p>
               </div>
             )}
-
           </div>
 
-          {/* HEALTH CARD BUTTON */}
-          <button onClick={() => navigate("/health-card")} className="btn-primary w-full">
-            View Health Card
+          <div className="grid grid-cols-2 gap-3">
+            <Action title="Health Card" onClick={() => navigate("/health-card")} />
+            <Action title="Emergency" onClick={() => navigate("/emergency")} />
+          </div>
+
+          <button
+            onClick={logout}
+            className="w-full py-3 rounded-xl bg-gray-100 text-red-500 font-semibold flex justify-center gap-2"
+          >
+            <FiLogOut /> Logout
           </button>
-        </>
-      )}
 
-      {/* LOGOUT */}
-      <button onClick={logout}
-        className="w-full py-3 rounded-xl bg-gray-100 text-red-500 font-semibold flex justify-center gap-2">
-        <FiLogOut /> Logout
-      </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
+function Field({ label, children }) {
+  return (
+    <div>
+      <label className="text-xs text-gray-500">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function Action({ title, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      className="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 rounded-xl text-center shadow cursor-pointer"
+    >
+      {title}
     </div>
   );
 }

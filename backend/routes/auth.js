@@ -337,7 +337,7 @@ const handleValidation = (req, res) => {
 // ============================
 // 🔥 REGISTER
 // ============================
-router.post('/register', async (req, res) => {
+/*router.post('/register', async (req, res) => {
   try {
     const err = handleValidation(req, res);
     if (err) return;
@@ -350,6 +350,12 @@ router.post('/register', async (req, res) => {
         success: false,
         message: 'User already exists'
       });
+      if (!req.body.acceptTerms) {
+  return res.status(400).json({
+    success: false,
+    message: "Accept Terms & Conditions"
+  });
+}
     }
 
     // ✅ SAFE ROLE
@@ -381,8 +387,66 @@ router.post('/register', async (req, res) => {
     });
   }
 });
+*/
+// new register block
 
+router.post('/register', async (req, res) => {
+  try {
+    const err = handleValidation(req, res);
+    if (err) return;
 
+    const { name, phone, password, role, acceptTerms } = req.body;
+
+    // 🔥 TERMS VALIDATION (CORRECT PLACE)
+    if (!acceptTerms) {
+      return res.status(400).json({
+        success: false,
+        message: "You must accept Terms & Conditions"
+      });
+    }
+
+    const existingUser = await User.findOne({ phone });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'User already exists'
+      });
+    }
+
+    // ✅ SAFE ROLE
+    const safeRole = ['patient', 'donor'].includes(role)
+      ? role
+      : 'patient';
+
+    const user = new User({
+      name,
+      phone,
+      password,
+      role: safeRole,
+
+      // 🔥 SAVE TERMS (CRITICAL)
+      acceptedTerms: true,
+      acceptedAt: new Date(),
+      termsVersion: "v1.0"
+    });
+
+    await user.save();
+
+    const token = generateToken(user._id, user.name, user.role);
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: user.toJSON()
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
 
 // ============================
 // 🔥 LOGIN

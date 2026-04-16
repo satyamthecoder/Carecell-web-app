@@ -1,18 +1,12 @@
-
-
-
-
-
-//code new  above working but constant data 
 import React, { useEffect, useState } from "react";
 import {
   FiSearch,
-  FiChevronDown,
-  FiChevronUp,
   FiFilter,
   FiMapPin,
-  FiDollarSign,
-  FiTag
+  FiChevronDown,
+  FiChevronUp,
+  FiTag,
+  FiDollarSign
 } from "react-icons/fi";
 
 export default function Schemes() {
@@ -31,6 +25,7 @@ export default function Schemes() {
   const [visibleCount, setVisibleCount] = useState(10);
   const [expandedId, setExpandedId] = useState(null);
 
+  // ✅ SAFE PARAM BUILDER
   const buildParams = () => {
     const params = new URLSearchParams();
 
@@ -39,7 +34,12 @@ export default function Schemes() {
     if (category) params.append("category", category);
     if (gender) params.append("gender", gender);
     if (income) params.append("income", income);
-    if (age) params.append("age", age);
+
+    // ✅ SAFE AGE CHECK
+    if (age !== "" && !isNaN(age)) {
+      params.append("age", age);
+    }
+
     if (occupation) params.append("occupation", occupation);
 
     return params.toString();
@@ -53,19 +53,22 @@ export default function Schemes() {
       const queryString = buildParams();
 
       const res = await fetch(
-        `http://localhost:5000/api/schemes${queryString ? `?${queryString}` : ""}`
+        `http://localhost:5000/api/schemes${
+          queryString ? `?${queryString}` : ""
+        }`
       );
 
       let data = await res.json();
 
       if (data.length === 0 && queryString) {
-        const fallbackRes = await fetch("http://localhost:5000/api/schemes");
+        const fallbackRes = await fetch(
+          "http://localhost:5000/api/schemes"
+        );
         data = await fallbackRes.json();
       }
 
       setSchemes(data);
       setVisibleCount(10);
-
     } catch (err) {
       setError("Failed to load schemes");
     } finally {
@@ -91,13 +94,13 @@ export default function Schemes() {
   };
 
   return (
-    <div className="p-4 min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="p-4 min-h-screen bg-gradient-to-br from-blue-300 via-white to-green-400">
 
       <h2 className="text-2xl font-bold mb-4 text-gray-800">
         🎯 Find Government Schemes
       </h2>
 
-      {/* 🔍 SEARCH */}
+      {/* SEARCH */}
       <div className="flex gap-2 mb-4">
         <div className="flex items-center bg-white rounded-xl px-3 py-2 shadow flex-1">
           <FiSearch className="text-gray-400 mr-2" />
@@ -111,13 +114,13 @@ export default function Schemes() {
 
         <button
           onClick={handleSearch}
-          className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 rounded-xl shadow"
+          className="bg-gradient-to-r from-blue-500 to-purple-300 text-white px-4 rounded-xl shadow"
         >
           Search
         </button>
       </div>
 
-      {/* 🔥 FILTERS */}
+      {/* FILTERS */}
       <div className="bg-white p-4 rounded-2xl shadow mb-4 grid grid-cols-2 gap-2">
 
         <div className="col-span-2 flex items-center gap-2 text-gray-600 mb-2">
@@ -137,10 +140,12 @@ export default function Schemes() {
           <option value="Financial Aid">Financial Aid</option>
         </select>
 
+        {/* ✅ FIXED GENDER */}
         <select value={gender} onChange={(e) => setGender(e.target.value)}>
           <option value="">All Gender</option>
           <option value="male">Male</option>
           <option value="female">Female</option>
+          <option value="other">Other</option>
         </select>
 
         <select value={occupation} onChange={(e) => setOccupation(e.target.value)}>
@@ -152,17 +157,34 @@ export default function Schemes() {
 
         <input
           type="number"
-          placeholder="Income (₹)"
+          placeholder="Annual Income (₹)"
           value={income}
           onChange={(e) => setIncome(e.target.value)}
           className="border rounded px-2"
         />
 
+        {/* ✅ FIXED AGE INPUT */}
         <input
           type="number"
           placeholder="Age"
           value={age}
-          onChange={(e) => setAge(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+
+            if (val === "") {
+              setAge("");
+              return;
+            }
+
+            const num = Number(val);
+
+            if (isNaN(num) || num < 0 || num > 120) {
+              alert("Enter valid age (0–120)");
+              return;
+            }
+
+            setAge(num);
+          }}
           className="border rounded px-2"
         />
       </div>
@@ -190,8 +212,6 @@ export default function Schemes() {
             key={s._id}
             className="bg-white rounded-2xl shadow-md p-4 border hover:shadow-lg transition"
           >
-
-            {/* HEADER */}
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="font-semibold text-gray-800">{s.name}</h3>
@@ -209,10 +229,8 @@ export default function Schemes() {
               </button>
             </div>
 
-            {/* DESC */}
             <p className="text-sm text-gray-600 mt-2">{s.description}</p>
 
-            {/* TAGS */}
             <div className="flex flex-wrap gap-2 mt-2">
               {s.tags?.map((tag, i) => (
                 <span
@@ -224,10 +242,8 @@ export default function Schemes() {
               ))}
             </div>
 
-            {/* EXPANDED */}
             {expandedId === s._id && (
               <div className="mt-3 text-sm space-y-2">
-
                 <div className="bg-green-50 p-2 rounded flex items-center gap-2">
                   <FiDollarSign className="text-green-600" />
                   Income Limit: ₹{s.incomeLimit || "N/A"}
@@ -254,7 +270,6 @@ export default function Schemes() {
         ))}
       </div>
 
-      {/* LOAD MORE */}
       {visibleCount < schemes.length && (
         <button
           onClick={() => setVisibleCount(visibleCount + 10)}
