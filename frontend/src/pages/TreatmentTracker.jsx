@@ -122,7 +122,7 @@ export default function TreatmentTracker() {
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-white rounded-t-3xl z-50 max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between rounded-t-3xl">
+              <div className="sticky top-0 bg-amber-500 border-b border-gray-100 px-5 py-4 flex items-center justify-between rounded-t-3xl">
                 <h3 className="font-display font-bold text-gray-900">Add Treatment / इलाज जोड़ें</h3>
                 <button onClick={() => setShowForm(false)} className="p-2 hover:bg-gray-100 rounded-xl"><FiX size={20} /></button>
               </div>

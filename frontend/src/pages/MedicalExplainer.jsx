@@ -124,10 +124,10 @@ export default function MedicalExplainer() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="h-full flex flex-col bg-gradient-to-br from-blue-200 via-white-200 to-purple-200">
 
       {/* HEADER */}
-      <div className="p-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white shadow-lg rounded-b-3xl">
+      <div className="p-4 bg-gradient-to-r from-indigo-500 via-purple-450 to-pink-500 text-white shadow-lg rounded-b-3xl">
         <h2 className="text-xl font-bold tracking-wide">🧠 AI Medical Assistant</h2>
         <p className="text-xs opacity-80">Smart health explanations, instantly</p>
       </div>
@@ -139,7 +139,7 @@ export default function MedicalExplainer() {
           className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${
             mode === 'term'
               ? 'bg-indigo-600 text-white shadow'
-              : 'bg-white text-gray-500 border'
+              : 'bg-red-300 text-gray-500 border'
           }`}
         >
           <FiSearch className="inline mr-1" /> Term
@@ -176,7 +176,7 @@ export default function MedicalExplainer() {
             <div
               className={`max-w-[80%] p-4 rounded-2xl text-sm shadow-md backdrop-blur-md ${
                 msg.role === 'user'
-                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                  ? 'bg-gradient-to-r from-blue-500 to-indigo-400 text-white'
                   : 'bg-white/80 border border-gray-200 text-gray-800'
               }`}
             >
@@ -202,7 +202,7 @@ export default function MedicalExplainer() {
         ))}
 
         {loading && (
-          <div className="bg-white px-4 py-2 rounded-xl shadow text-sm w-fit animate-pulse">
+          <div className="bg-blue-300 px-4 py-2 rounded-xl shadow text-sm w-fit animate-pulse">
             🤖 Thinking...
           </div>
         )}

@@ -104,7 +104,6 @@ Carecell-web-app/
 │   │   ├── ai.js
 │   │   ├── auth.js
 │   │   ├── bloodRequests.js
-│   │   ├── checkin.js
 │   │   ├── donations.js
 │   │   ├── donors.js
 │   │   ├── emergency.js
@@ -121,17 +120,19 @@ Carecell-web-app/
 │
 ├── 🎨  frontend/
 │   ├── public/
-│   │   └── index.html
+│   │   |── index.html
+|   |   └──logo.png
 │   └── src/
 │       ├── components/
 │       │   ├── Layout.jsx
 │       │   └── LoadingSpinner.jsx
+|       |   └── TermsModal.jsx
 │       ├── context/
 │       │   └── authStore.js
 │       ├── pages/
 │       │   ├── AdminDonations.jsx
 │       │   ├── BloodRequest.jsx
-│       │   ├── DailyCheckin.jsx
+│       │   ├── DailyCheckin.jsx   // not in use 
 │       │   ├── Dashboard.jsx
 │       │   ├── DonorProfile.jsx
 │       │   ├── EmergencyMode.jsx
@@ -139,12 +140,13 @@ Carecell-web-app/
 │       │   ├── HospitalFinder.jsx
 │       │   ├── Login.jsx
 │       │   ├── MedicalExplainer.jsx
-│       │   ├── Nutrition.jsx
+│       │   ├── Nutrition.jsx         // not in use 
 │       │   ├── Profile.jsx
 │       │   ├── PublicHealthCard.jsx
 │       │   ├── Register.jsx
 │       │   ├── RequestHelp.jsx
 │       │   ├── Schemes.jsx
+|       |   |── Terms.jsx
 │       │   └── TreatmentTracker.jsx
 │       ├── utils/
 │       │   └── api.js

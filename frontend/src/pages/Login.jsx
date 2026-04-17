@@ -43,23 +43,32 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-100 via-white to-blue-100">
+    <div className="min-h-screen flex flex-col relative bg-gradient-to-br from-indigo-200 via-white to-blue-200">
+
+      {/* 🔥 BACKGROUND GLOW */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.15),transparent)]" />
 
       {/* HEADER */}
-      <div className="pt-16 pb-10 px-6 text-center relative">
+      <div className="pt-16 pb-6 px-6 text-center relative z-10">
 
-        {/* LOGO */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
           className="flex flex-col items-center"
         >
-          <img
-            src="/logo.png"
-            alt="CareCell"
-            className="w-20 h-20 object-contain mb-3 drop-shadow-md"
-          />
+          {/* ✅ FIXED LOGO */}
+          <div className="relative mb-4">
+            <div className="absolute inset-0 bg-indigo-400 blur-2xl opacity-20 rounded-full"></div>
+
+            <div className="relative bg-white/90 backdrop-blur-md p-2 rounded-2xl shadow-lg">
+              <img
+                src="/logo.png"
+                alt="CareCell"
+                className="w-29 h-28 object-contain"
+              />
+            </div>
+          </div>
 
           <h1 className="text-2xl font-bold text-gray-800">
             CareCell
@@ -76,7 +85,7 @@ export default function Login() {
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.4 }}
-        className="flex-1 bg-white rounded-t-3xl shadow-xl px-6 pt-8 pb-10 max-w-md mx-auto w-full"
+        className="flex-1 bg-white/90 backdrop-blur-xl rounded-t-[40px] shadow-2xl shadow-indigo-100 px-6 pt-8 pb-10 max-w-md mx-auto w-full relative z-10"
       >
         <h2 className="text-xl font-bold text-gray-900 mb-1">
           Login
@@ -98,7 +107,11 @@ export default function Login() {
                 value={form.phone}
                 onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                 placeholder="Enter mobile number"
-                className="w-full pl-10 pr-3 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-400 outline-none"
+                className="w-full pl-10 pr-3 py-3 rounded-xl border border-gray-200 
+                focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 
+                hover:border-indigo-300 
+                bg-white/80 backdrop-blur-md 
+                outline-none transition-all duration-200"
                 maxLength={10}
               />
             </div>
@@ -114,13 +127,17 @@ export default function Login() {
                 value={form.password}
                 onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                 placeholder="Enter password"
-                className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-400 outline-none"
+                className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-200 
+                focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400 
+                hover:border-indigo-300 
+                bg-white/80 backdrop-blur-md 
+                outline-none transition-all duration-200"
               />
 
               <button
                 type="button"
                 onClick={() => setShowPass(!showPass)}
-                className="absolute right-3.5 top-3.5 text-gray-400"
+                className="absolute right-3.5 top-3.5 text-gray-400 hover:text-gray-600"
               >
                 {showPass ? <FiEyeOff size={18} /> : <FiEye size={18} />}
               </button>
@@ -131,9 +148,19 @@ export default function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 text-white font-semibold shadow-md hover:scale-[1.02] transition"
+            className="w-full py-3 rounded-xl 
+            bg-gradient-to-r from-indigo-600 via-purple-500 to-blue-500 
+            text-white font-semibold 
+            shadow-lg shadow-indigo-200 
+            hover:scale-[1.03] active:scale-[0.97] 
+            transition-all duration-200"
           >
-            {isLoading ? 'Logging in...' : 'Login'}
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Logging in...
+              </span>
+            ) : "Login"}
           </button>
         </form>
 
@@ -147,7 +174,7 @@ export default function Login() {
         {/* DEMO */}
         <button
           onClick={demoLogin}
-          className="w-full py-3 border border-dashed border-blue-400 text-blue-600 rounded-xl hover:bg-blue-50 transition"
+          className="w-full py-3 border border-dashed border-indigo-400 text-indigo-600 rounded-xl hover:bg-indigo-50 transition font-medium"
         >
           🎯 Try Demo
         </button>
@@ -155,7 +182,7 @@ export default function Login() {
         {/* REGISTER */}
         <p className="text-center text-gray-600 text-sm mt-6">
           New user?{' '}
-          <Link to="/register" className="text-blue-600 font-semibold hover:underline">
+          <Link to="/register" className="text-indigo-600 font-semibold hover:underline">
             Register
           </Link>
         </p>
