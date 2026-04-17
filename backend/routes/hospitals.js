@@ -1,8 +1,3 @@
-
-
-
-//new code with better expireance
-
 const express = require('express');
 const router = express.Router();
 const Hospital = require('../models/Hospital');
