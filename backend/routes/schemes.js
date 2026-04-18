@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 // ✅ FIXED IMPORT (CRITICAL)
-const Scheme = require("../models/Scheme").default;
+const Scheme = require("../models/Scheme");
 
 
 // 🔥 GET SCHEMES
