@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiInfo } from 'react-icons/fi';
-import { nutritionAPI } from '../utils/api';
+//import { nutritionAPI } from '../utils/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const cancerTypes = [

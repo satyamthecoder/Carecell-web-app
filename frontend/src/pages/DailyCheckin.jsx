@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { checkinAPI, aiAPI } from '../utils/api';
+//import { checkinAPI, aiAPI } from '../utils/api';
 
 const wellbeingEmojis = ['😫', '😟', '😐', '🙂', '😊'];
 const wellbeingLabels = ['बहुत बुरा', 'बुरा', 'ठीक', 'अच्छा', 'बहुत अच्छा'];
@@ -37,7 +37,7 @@ export default function DailyCheckin() {
     try {
       const checkinData = { wellbeing, symptoms, notes };
       const [ciRes] = await Promise.allSettled([
-        checkinAPI.submit(checkinData),
+       // checkinAPI.submit(checkinData),
         aiAPI.buddyAssessment(checkinData)
       ]);
 

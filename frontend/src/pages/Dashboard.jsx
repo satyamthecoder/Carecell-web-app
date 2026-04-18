@@ -53,7 +53,7 @@ export default function Dashboard() {
       </div>
 
       {/* 🔥 HERO */}
-      <div className="bg-gradient-to-r from-pink-500 to-red-500 text-white p-5 rounded-3xl shadow-lg flex justify-between items-center">
+      <div className="bg-gradient-to-r from-blue-400 to-green-300 text-white p-5 rounded-3xl shadow-lg flex justify-between items-center">
         <div>
           <h2 className="text-lg font-semibold">Hello, {user?.name} 👋</h2>
           <p className="text-sm opacity-80">{user?.phone}</p>
@@ -65,7 +65,7 @@ export default function Dashboard() {
       </div>
 
       {/* 🚨 EMERGENCY PANEL */}
-      <div className="bg-red-500 text-white p-4 rounded-3xl shadow">
+      <div className="bg-red-800 text-purple-200 p-4 rounded-3xl shadow">
         <div className="flex justify-between mb-3">
           <p className="font-semibold text-sm">Emergency Mode</p>
           <span className="text-xs bg-white/20 px-2 py-1 rounded">Active</span>
@@ -124,7 +124,7 @@ export default function Dashboard() {
       {/* 💡 SCHEME PREVIEW */}
       <Section title="Find Schemes" onClick={() => navigate('/schemes')}>
         <div className="flex gap-2 flex-wrap">
-          <span className="bg-white px-3 py-1 rounded-xl text-xs shadow">State</span>
+          <span className="bg-white  px-3 py-1 rounded-xl text-xs shadow">State</span>
           <span className="bg-white px-3 py-1 rounded-xl text-xs shadow">Category</span>
           <span className="bg-white px-3 py-1 rounded-xl text-xs shadow">Gender</span>
           <span className="bg-white px-3 py-1 rounded-xl text-xs shadow">Income</span>
