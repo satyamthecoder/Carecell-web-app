@@ -25,6 +25,8 @@ export default function Schemes() {
   const [visibleCount, setVisibleCount] = useState(10);
   const [expandedId, setExpandedId] = useState(null);
 
+  const API_BASE = process.env.REACT_APP_API_URL; // ✅ ADDED
+
   // ✅ SAFE PARAM BUILDER
   const buildParams = () => {
     const params = new URLSearchParams();
@@ -35,7 +37,6 @@ export default function Schemes() {
     if (gender) params.append("gender", gender);
     if (income) params.append("income", income);
 
-    // ✅ SAFE AGE CHECK
     if (age !== "" && !isNaN(age)) {
       params.append("age", age);
     }
@@ -53,17 +54,15 @@ export default function Schemes() {
       const queryString = buildParams();
 
       const res = await fetch(
-        `http://localhost:5000/api/schemes${
-          queryString ? `?${queryString}` : ""
-        }`
-      );
+        `${API_BASE}/schemes${queryString ? `?${queryString}` : ""}`
+      ); // ✅ FIXED
 
       let data = await res.json();
 
       if (data.length === 0 && queryString) {
         const fallbackRes = await fetch(
-          "http://localhost:5000/api/schemes"
-        );
+          `${API_BASE}/schemes`
+        ); // ✅ FIXED
         data = await fallbackRes.json();
       }
 
@@ -100,7 +99,6 @@ export default function Schemes() {
         🎯 Find Government Schemes
       </h2>
 
-      {/* SEARCH */}
       <div className="flex gap-2 mb-4">
         <div className="flex items-center bg-white rounded-xl px-3 py-2 shadow flex-1">
           <FiSearch className="text-gray-400 mr-2" />
@@ -120,7 +118,6 @@ export default function Schemes() {
         </button>
       </div>
 
-      {/* FILTERS */}
       <div className="bg-white p-4 rounded-2xl shadow mb-4 grid grid-cols-2 gap-2">
 
         <div className="col-span-2 flex items-center gap-2 text-gray-600 mb-2">
@@ -140,7 +137,6 @@ export default function Schemes() {
           <option value="Financial Aid">Financial Aid</option>
         </select>
 
-        {/* ✅ FIXED GENDER */}
         <select value={gender} onChange={(e) => setGender(e.target.value)}>
           <option value="">All Gender</option>
           <option value="male">Male</option>
@@ -163,7 +159,6 @@ export default function Schemes() {
           className="border rounded px-2"
         />
 
-        {/* ✅ FIXED AGE INPUT */}
         <input
           type="number"
           placeholder="Age"
@@ -192,7 +187,6 @@ export default function Schemes() {
       {loading && <p className="text-center">Loading...</p>}
       {error && <p className="text-center text-red-500">{error}</p>}
 
-      {/* NO RESULT */}
       {!loading && schemes.length === 0 && (
         <div className="text-center bg-white p-6 rounded-2xl shadow">
           <h3 className="text-lg font-semibold mb-2">No schemes found 😕</h3>
@@ -205,7 +199,6 @@ export default function Schemes() {
         </div>
       )}
 
-      {/* RESULTS */}
       <div className="space-y-4">
         {schemes.slice(0, visibleCount).map((s) => (
           <div

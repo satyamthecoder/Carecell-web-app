@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [hospitals, setHospitals] = useState([]);
   const [treatments, setTreatments] = useState([]);
 
-  const fetchHospitals = async (lat, lng) => {
+/*const fetchHospitals = async (lat, lng) => {
     try {
       const res = await fetch(
         `http://localhost:5000/api/hospitals/nearby?lat=${lat}&lng=${lng}`
@@ -26,7 +26,26 @@ export default function Dashboard() {
     } catch {
       setHospitals([]);
     }
-  };
+  };*/
+
+ //new code with react url 
+const fetchHospitals = async (lat, lng) => {
+  try {
+    const API_BASE = process.env.REACT_APP_API_URL; // ✅ use env
+
+    const res = await fetch(
+      `${API_BASE}/hospitals/nearby?lat=${lat}&lng=${lng}`
+    );
+
+    const data = await res.json();
+
+    setHospitals(Array.isArray(data) ? data : data?.hospitals || []);
+  } catch (err) {
+    console.error("Fetch hospitals error:", err); // ✅ added debug
+    setHospitals([]);
+  }
+};
+
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
