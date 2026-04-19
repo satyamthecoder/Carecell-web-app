@@ -154,7 +154,7 @@ const API_BASE = process.env.REACT_APP_API_URL;
 if (!API_BASE) {
   throw new Error("❌ REACT_APP_API_URL not defined");
 }
-
+getMatches: () => fetch('/api/blood-requests/match').then(res => res.json())
 const api = axios.create({
   baseURL: API_BASE,
   timeout: 15000,
@@ -230,12 +230,26 @@ export const hospitalAPI = {
 };
 
 // Blood Requests
+/*
 export const bloodAPI = {
   createRequest: (data) => api.post('/blood-requests', data),
   getMyRequests: (params) => api.get('/blood-requests', { params }),
   getActiveRequests: () => api.get('/blood-requests/active'),
   respond: (id, data) => api.post(`/blood-requests/${id}/respond`, data),
+};*/
+
+// new blodd api 
+export const bloodAPI = {
+  createRequest: (data) => api.post('/blood-requests', data),
+  getMyRequests: (params) => api.get('/blood-requests', { params }),
+  getActiveRequests: () => api.get('/blood-requests/active'),
+
+  // ✅ FIXED
+  getMatches: () => api.get('/blood-requests/match'),
+
+  respond: (id, data) => api.post(`/blood-requests/${id}/respond`, data),
 };
+
 
 // Treatments
 export const treatmentAPI = {

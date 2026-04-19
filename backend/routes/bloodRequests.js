@@ -1,4 +1,4 @@
-const express = require('express');
+/*nst express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 
@@ -86,6 +86,179 @@ router.post('/:id/respond', protect, async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+module.exports = router;
+*/
+
+
+// new code  for blodd request 
+
+
+const express = require('express');
+const router = express.Router();
+const { protect } = require('../middleware/auth');
+const BloodRequest = require('../models/BloodRequest');
+
+// 🧠 Blood compatibility map
+const compatibility = {
+  "O-": ["O-"],
+  "O+": ["O+", "O-"],
+  "A-": ["A-", "O-"],
+  "A+": ["A+", "A-", "O+", "O-"],
+  "B-": ["B-", "O-"],
+  "B+": ["B+", "B-", "O+", "O-"],
+  "AB-": ["AB-", "A-", "B-", "O-"],
+  "AB+": ["AB+", "A+", "B+", "O+", "AB-", "A-", "B-", "O-"]
+};
+
+
+// ==============================
+// @POST /api/blood-requests
+// Create blood request
+// ==============================
+router.post('/', protect, async (req, res) => {
+  try {
+    const { bloodGroup, units, urgency, hospitalName, city } = req.body;
+
+    if (!bloodGroup || !units) {
+      return res.status(400).json({
+        success: false,
+        message: "Blood group and units are required"
+      });
+    }
+
+    const request = await BloodRequest.create({
+      patient: req.user.id,
+      bloodGroup,
+      units,
+      urgency: urgency || "normal",
+      hospitalName,
+      city,
+      status: "active",
+      createdAt: new Date()
+    });
+
+    res.status(201).json({
+      success: true,
+      request
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+
+// ==============================
+// @GET /api/blood-requests
+// Get user's own requests
+// ==============================
+router.get('/', protect, async (req, res) => {
+  try {
+    const requests = await BloodRequest.find({
+      patient: req.user.id
+    }).sort('-createdAt');
+
+    res.json({
+      success: true,
+      requests
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+
+// ==============================
+// @GET /api/blood-requests/match
+// Get compatible requests for donor
+// ==============================
+router.get('/match', protect, async (req, res) => {
+  try {
+    const userBloodGroup = req.user.bloodGroup;
+
+    if (!userBloodGroup) {
+      return res.status(400).json({
+        success: false,
+        message: "Please update your blood group in profile"
+      });
+    }
+
+    const compatibleGroups = compatibility[userBloodGroup];
+
+    const requests = await BloodRequest.find({
+      status: 'active',
+      bloodGroup: { $in: compatibleGroups }
+    })
+      .populate('patient', 'name bloodGroup')
+      .sort('-createdAt');
+
+    // 🔥 Priority sorting (same group first)
+    const sortedRequests = requests.sort((a, b) => {
+      if (a.bloodGroup === userBloodGroup) return -1;
+      if (b.bloodGroup === userBloodGroup) return 1;
+      return 0;
+    });
+
+    res.json({
+      success: true,
+      requests: sortedRequests
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+
+// ==============================
+// @POST /api/blood-requests/:id/respond
+// Donor responds to request
+// ==============================
+router.post('/:id/respond', protect, async (req, res) => {
+  try {
+    const { status, message } = req.body;
+
+    const bloodReq = await BloodRequest.findById(req.params.id);
+
+    if (!bloodReq) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found"
+      });
+    }
+
+    bloodReq.responses.push({
+      donor: req.user.id,
+      status,
+      message,
+      respondedAt: new Date()
+    });
+
+    await bloodReq.save();
+
+    res.json({
+      success: true,
+      message: `Response recorded: ${status}`
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 });
 
