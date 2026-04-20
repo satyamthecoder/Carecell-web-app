@@ -115,17 +115,16 @@ const compatibility = {
 
 
 // ==============================
-// @POST /api/blood-requests
-// Create blood request
+// CREATE REQUEST
 // ==============================
 router.post('/', protect, async (req, res) => {
   try {
-    const { bloodGroup, units, urgency, hospitalName, city } = req.body;
+    const { bloodGroup, units, urgency, hospitalName, city, type } = req.body;
 
-    if (!bloodGroup || !units) {
+    if (!bloodGroup || !units || !type) {
       return res.status(400).json({
         success: false,
-        message: "Blood group and units are required"
+        message: "Blood group, units and type are required"
       });
     }
 
@@ -133,30 +132,25 @@ router.post('/', protect, async (req, res) => {
       patient: req.user.id,
       bloodGroup,
       units,
-      urgency: urgency || "normal",
+      type,
+      urgency: urgency || "routine",
       hospitalName,
       city,
       status: "active",
       createdAt: new Date()
     });
 
-    res.status(201).json({
-      success: true,
-      request
-    });
+    res.status(201).json({ success: true, request });
 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error("CREATE ERROR:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
 
 // ==============================
-// @GET /api/blood-requests
-// Get user's own requests
+// GET MY REQUESTS
 // ==============================
 router.get('/', protect, async (req, res) => {
   try {
@@ -164,68 +158,99 @@ router.get('/', protect, async (req, res) => {
       patient: req.user.id
     }).sort('-createdAt');
 
-    res.json({
-      success: true,
-      requests
-    });
+    res.json({ success: true, requests });
 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error("GET ERROR:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
 
 // ==============================
-// @GET /api/blood-requests/match
-// Get compatible requests for donor
+// 🔥 SMART MATCH SYSTEM
 // ==============================
 router.get('/match', protect, async (req, res) => {
   try {
-    const userBloodGroup = req.user.bloodGroup;
+    const userBloodGroup = req.user?.donorProfile?.bloodGroup;
 
     if (!userBloodGroup) {
       return res.status(400).json({
         success: false,
-        message: "Please update your blood group in profile"
+        message: "Update blood group in profile"
       });
     }
 
-    const compatibleGroups = compatibility[userBloodGroup];
+    const compatibleGroups = compatibility[userBloodGroup] || [];
+
+    const donorLat = req.user?.location?.coordinates?.lat || 0;
+    const donorLng = req.user?.location?.coordinates?.lng || 0;
 
     const requests = await BloodRequest.find({
       status: 'active',
       bloodGroup: { $in: compatibleGroups }
-    })
-      .populate('patient', 'name bloodGroup')
-      .sort('-createdAt');
+    }).populate('patient');
 
-    // 🔥 Priority sorting (same group first)
-    const sortedRequests = requests.sort((a, b) => {
+    // 🔥 Distance calculator
+    const getDistance = (lat1, lon1, lat2, lon2) => {
+      if (!lat2 || !lon2) return 9999;
+
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    };
+
+    const urgencyScore = {
+      emergency: 3,
+      urgent: 2,
+      routine: 1
+    };
+
+    const enriched = requests.map(r => {
+      const patientLat = r.patient?.location?.coordinates?.lat || 0;
+      const patientLng = r.patient?.location?.coordinates?.lng || 0;
+
+      return {
+        ...r.toObject(),
+        distance: getDistance(donorLat, donorLng, patientLat, patientLng),
+        urgencyRank: urgencyScore[r.urgency] || 0
+      };
+    });
+
+    // 🔥 SORTING LOGIC
+    enriched.sort((a, b) => {
+      if (b.urgencyRank !== a.urgencyRank) {
+        return b.urgencyRank - a.urgencyRank;
+      }
+
       if (a.bloodGroup === userBloodGroup) return -1;
       if (b.bloodGroup === userBloodGroup) return 1;
-      return 0;
+
+      return a.distance - b.distance;
     });
 
     res.json({
       success: true,
-      requests: sortedRequests
+      requests: enriched
     });
 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error("MATCH ERROR:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
 
 // ==============================
-// @POST /api/blood-requests/:id/respond
-// Donor responds to request
+// RESPOND (ANTI-SPAM)
 // ==============================
 router.post('/:id/respond', protect, async (req, res) => {
   try {
@@ -237,6 +262,18 @@ router.post('/:id/respond', protect, async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Request not found"
+      });
+    }
+
+    // 🔥 prevent duplicate response
+    const already = bloodReq.responses.find(
+      r => r.donor.toString() === req.user.id
+    );
+
+    if (already) {
+      return res.status(400).json({
+        success: false,
+        message: "Already responded"
       });
     }
 
@@ -255,10 +292,8 @@ router.post('/:id/respond', protect, async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error("RESPOND ERROR:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

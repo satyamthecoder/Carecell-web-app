@@ -7,18 +7,18 @@ import useAuthStore from '../context/authStore';
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export default function BloodRequest() {
-  const { user } = useAuthStore(); // ✅ FIXED
+  const { user } = useAuthStore();
 
   const [tab, setTab] = useState('request');
 
-  // 🩸 Blood Request
   const [form, setForm] = useState({
     bloodGroup: 'A+',
     units: 1,
-    hospitalName: ''
+    hospitalName: '',
+    type: 'whole_blood',
+    urgency: 'routine'
   });
 
-  // 🩺 Vitals
   const [vitals, setVitals] = useState({
     platelets: '',
     ANC: '',
@@ -71,7 +71,7 @@ export default function BloodRequest() {
   };
 
   // =========================
-  // BLOOD REQUEST
+  // SUBMIT REQUEST
   // =========================
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,6 +81,7 @@ export default function BloodRequest() {
     }
 
     setSubmitting(true);
+
     try {
       await bloodAPI.createRequest(form);
       toast.success("Request created");
@@ -93,12 +94,23 @@ export default function BloodRequest() {
   };
 
   // =========================
+  // RESPOND
+  // =========================
+  const respond = async (id, status) => {
+    try {
+      await bloodAPI.respond(id, { status });
+      toast.success("Response sent");
+      loadMatches();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  // =========================
   // SAVE VITALS
   // =========================
   const saveVitals = async () => {
-    if (!user?.id) {
-      return toast.error("User not found");
-    }
+    if (!user?._id) return toast.error("User missing");
 
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/vitals/save`, {
@@ -106,7 +118,7 @@ export default function BloodRequest() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...vitals,
-          patientId: user.id
+          patientId: user._id
         })
       });
 
@@ -121,6 +133,15 @@ export default function BloodRequest() {
     } catch {
       toast.error("Failed to save vitals");
     }
+  };
+
+  // =========================
+  // UI HELPERS
+  // =========================
+  const urgencyColor = (u) => {
+    if (u === 'emergency') return 'bg-red-500';
+    if (u === 'urgent') return 'bg-yellow-500';
+    return 'bg-green-500';
   };
 
   return (
@@ -145,11 +166,10 @@ export default function BloodRequest() {
         ))}
       </div>
 
-      {/* REQUEST TAB */}
+      {/* REQUEST */}
       {tab === 'request' && (
         <div className="space-y-5">
 
-          {/* 🩸 Blood Request */}
           <div className="bg-white p-4 rounded-2xl shadow-lg">
             <p className="font-semibold mb-2">Blood Request</p>
 
@@ -159,9 +179,7 @@ export default function BloodRequest() {
                   key={bg}
                   onClick={() => setForm(f => ({ ...f, bloodGroup: bg }))}
                   className={`py-2 rounded-xl border ${
-                    form.bloodGroup === bg
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-50'
+                    form.bloodGroup === bg ? 'bg-green-500 text-white' : 'bg-gray-50'
                   }`}
                 >
                   {bg}
@@ -176,6 +194,26 @@ export default function BloodRequest() {
               className="w-full p-2 border rounded-lg mb-3"
             />
 
+            <select
+              value={form.type}
+              onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+              className="w-full p-2 border rounded-lg mb-2"
+            >
+              <option value="whole_blood">Whole Blood</option>
+              <option value="platelets">Platelets</option>
+              <option value="plasma">Plasma</option>
+            </select>
+
+            <select
+              value={form.urgency}
+              onChange={e => setForm(f => ({ ...f, urgency: e.target.value }))}
+              className="w-full p-2 border rounded-lg mb-3"
+            >
+              <option value="emergency">Emergency</option>
+              <option value="urgent">Urgent</option>
+              <option value="routine">Routine</option>
+            </select>
+
             <button
               onClick={handleSubmit}
               className="w-full bg-green-600 text-white py-2 rounded-xl"
@@ -184,7 +222,7 @@ export default function BloodRequest() {
             </button>
           </div>
 
-          {/* 🩺 Vitals */}
+          {/* VITALS */}
           <div className="bg-white p-4 rounded-2xl shadow-lg">
             <p className="font-semibold mb-3">Daily Vitals</p>
 
@@ -209,18 +247,14 @@ export default function BloodRequest() {
               className="input-field mb-3"
             />
 
-            <button
-              onClick={saveVitals}
-              className="w-full bg-green-500 text-white py-2 rounded-xl"
-            >
+            <button onClick={saveVitals} className="w-full bg-green-500 text-white py-2 rounded-xl">
               Save Vitals
             </button>
 
-            {/* Alerts */}
             <div className="mt-3 space-y-2 text-sm">
-              {alerts.platelet && <p className="text-red-600 font-semibold">⚠️ Platelets critically low</p>}
-              {alerts.anc && <p className="text-red-600 font-semibold">⚠️ Infection risk</p>}
-              {alerts.engraftment && <p className="text-green-600 font-bold">🎉 Engraftment detected!</p>}
+              {alerts.platelet && <p className="text-red-600">⚠️ Platelets critically low</p>}
+              {alerts.anc && <p className="text-red-600">⚠️ Infection risk</p>}
+              {alerts.engraftment && <p className="text-green-600">🎉 Engraftment detected!</p>}
             </div>
           </div>
 
@@ -232,10 +266,40 @@ export default function BloodRequest() {
         <div>
           {loadingMatches ? <LoadingSpinner /> : (
             <div className="space-y-3">
-              {matches.map(r => (
-                <div key={r._id} className="bg-white p-4 rounded-2xl shadow-lg">
-                  <p className="font-bold text-green-700">{r.bloodGroup}</p>
+              {matches.map((r, i) => (
+                <div key={r._id} className={`bg-white p-4 rounded-2xl shadow-lg ${i === 0 ? 'border-2 border-green-500' : ''}`}>
+
+                  <div className="flex justify-between items-center">
+                    <p className="font-bold text-green-700">{r.bloodGroup}</p>
+                    <span className={`text-white px-2 py-1 rounded text-xs ${urgencyColor(r.urgency)}`}>
+                      {r.urgency}
+                    </span>
+                  </div>
+
                   <p className="text-sm text-gray-500">{r.hospitalName}</p>
+
+                  {/* ✅ DISTANCE */}
+                  <p className="text-xs text-gray-400 mt-1">
+                    {r.distance ? `${r.distance.toFixed(1)} km away` : "Distance unknown"}
+                  </p>
+
+                  {/* ✅ ACTION */}
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => respond(r._id, "accepted")}
+                      className="flex-1 bg-green-500 text-white py-1 rounded"
+                    >
+                      Accept
+                    </button>
+
+                    <button
+                      onClick={() => respond(r._id, "rejected")}
+                      className="flex-1 bg-red-500 text-white py-1 rounded"
+                    >
+                      Reject
+                    </button>
+                  </div>
+
                 </div>
               ))}
             </div>

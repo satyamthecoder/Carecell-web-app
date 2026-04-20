@@ -15,7 +15,7 @@ export default function DonorProfile() {
     address: "",
     pinCode: "",
 
-    // 🧬 STEM CELL
+    // STEM
     isStemDonor: false,
     donorType: "BONE_MARROW",
     hlaA: "",
@@ -39,17 +39,25 @@ export default function DonorProfile() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
+    setForm({
+      ...form,
+      [name]: type === "checkbox" ? checked : value
+    });
   };
 
   // =========================
-  // SAVE BLOOD DONOR (FIXED CORRECTLY)
+  // SAVE BLOOD DONOR
   // =========================
   const handleSave = async () => {
     try {
       setLoading(true);
 
-      const res = await donorAPI.registerDonor({
+      // ✅ VALIDATION
+      if (!form.fullName || !form.dob || !form.gender || !form.bloodGroup) {
+        return alert("Fill all required fields");
+      }
+
+      const payload = {
         fullName: form.fullName,
         dob: form.dob,
         gender: form.gender,
@@ -61,25 +69,29 @@ export default function DonorProfile() {
         address: form.address,
         pinCode: form.pinCode,
 
-        diseases: "",
-        allergies: "",
-        surgeries: "",
+        diseases: [],
+        allergies: [],
+        surgeries: [],
 
         canDonatePlatelet: false,
         lastDonationDate: null,
 
-        consent: true // 🔥 REQUIRED
-      });
-
-      const updatedUser = {
-        ...user,
-        donorProfile: res.donorProfile,
+        consent: true
       };
 
-      setUser(updatedUser);
-      alert("Saved");
+      console.log("DONOR PAYLOAD:", payload);
+
+      const res = await donorAPI.registerDonor(payload);
+
+      setUser({
+        ...user,
+        donorProfile: res.donorProfile
+      });
+
+      alert("Saved successfully");
 
     } catch (err) {
+      console.error(err);
       alert(err.message);
     } finally {
       setLoading(false);
@@ -91,19 +103,32 @@ export default function DonorProfile() {
   // =========================
   const registerStem = async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/stemcell/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user._id,
-          donorType: form.donorType,
-          hlaA: form.hlaA,
-          hlaB: form.hlaB,
-          hlaC: form.hlaC,
-          hlaDRB1: form.hlaDRB1,
-          hlaDQB1: form.hlaDQB1
-        })
-      });
+      if (!user?._id) {
+        return alert("User not loaded. Please login again.");
+      }
+
+      const payload = {
+        userId: user._id,
+        donorType: form.donorType,
+        hlaA: form.hlaA,
+        hlaB: form.hlaB,
+        hlaC: form.hlaC,
+        hlaDRB1: form.hlaDRB1,
+        hlaDQB1: form.hlaDQB1
+      };
+
+      console.log("STEM PAYLOAD:", payload);
+
+      const res = await fetch(
+        `${process.env.REACT_APP_API_URL}/stemcell/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        }
+      );
 
       const data = await res.json();
 
@@ -112,15 +137,20 @@ export default function DonorProfile() {
       alert("Stem cell donor registered");
 
     } catch (err) {
+      console.error(err);
       alert(err.message);
     }
   };
 
   // =========================
-  // MATCH
+  // GET MATCHES
   // =========================
   const getMatches = async () => {
     try {
+      if (!user?._id) {
+        return alert("User missing");
+      }
+
       const res = await fetch(
         `${process.env.REACT_APP_API_URL}/stemcell/match/${user._id}`
       );
@@ -132,6 +162,7 @@ export default function DonorProfile() {
       setMatches(data.matches || []);
 
     } catch (err) {
+      console.error(err);
       alert(err.message);
     }
   };
@@ -148,12 +179,13 @@ export default function DonorProfile() {
         <p className="font-semibold mb-3">🩸 Blood Donor</p>
 
         <input name="fullName" placeholder="Name" value={form.fullName} onChange={handleChange} className="input-field mb-2" />
+
         <input name="dob" type="date" value={form.dob} onChange={handleChange} className="input-field mb-2" />
 
         <select name="gender" value={form.gender} onChange={handleChange} className="input-field mb-2">
           <option value="">Gender</option>
-          <option>male</option>
-          <option>female</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
         </select>
 
         <select name="bloodGroup" value={form.bloodGroup} onChange={handleChange} className="input-field mb-2">
@@ -214,6 +246,7 @@ export default function DonorProfile() {
       {matches.length > 0 && (
         <div className="bg-white p-4 rounded-2xl shadow-lg">
           <p className="font-semibold mb-3">🧬 Matches</p>
+
           {matches.map((m, i) => (
             <div key={i} className="border p-2 rounded mb-2">
               Score: {m.score}/10
