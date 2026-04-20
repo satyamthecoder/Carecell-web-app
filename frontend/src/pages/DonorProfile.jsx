@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { donorAPI } from "../utils/api";
 import useAuthStore from "../context/authStore";
 
@@ -15,13 +14,6 @@ export default function DonorProfile() {
     state: "",
     address: "",
     pinCode: "",
-    diseases: "",
-    allergies: "",
-    surgeries: "",
-    canDonatePlatelet: false,
-    lastDonationDate: "",
-    consent: false,
-    location: { lat: null, lng: null },
 
     // 🧬 STEM CELL
     isStemDonor: false,
@@ -51,12 +43,33 @@ export default function DonorProfile() {
   };
 
   // =========================
-  // SAVE BLOOD DONOR
+  // SAVE BLOOD DONOR (FIXED CORRECTLY)
   // =========================
   const handleSave = async () => {
     try {
       setLoading(true);
-      const res = await donorAPI.registerDonor(form);
+
+      const res = await donorAPI.registerDonor({
+        fullName: form.fullName,
+        dob: form.dob,
+        gender: form.gender,
+        bloodGroup: form.bloodGroup,
+        rhFactor: "positive",
+
+        city: form.city,
+        state: form.state,
+        address: form.address,
+        pinCode: form.pinCode,
+
+        diseases: "",
+        allergies: "",
+        surgeries: "",
+
+        canDonatePlatelet: false,
+        lastDonationDate: null,
+
+        consent: true // 🔥 REQUIRED
+      });
 
       const updatedUser = {
         ...user,
@@ -78,14 +91,12 @@ export default function DonorProfile() {
   // =========================
   const registerStem = async () => {
     try {
-      await fetch(`${process.env.REACT_APP_API_URL}/stemcell/register`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/stemcell/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: user.id,
+          userId: user._id,
           donorType: form.donorType,
-
-          // ✅ SEND HLA
           hlaA: form.hlaA,
           hlaB: form.hlaB,
           hlaC: form.hlaC,
@@ -94,10 +105,14 @@ export default function DonorProfile() {
         })
       });
 
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message);
+
       alert("Stem cell donor registered");
 
-    } catch {
-      alert("Error registering");
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -106,14 +121,18 @@ export default function DonorProfile() {
   // =========================
   const getMatches = async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/stemcell/match/${user.id}`);
+      const res = await fetch(
+        `${process.env.REACT_APP_API_URL}/stemcell/match/${user._id}`
+      );
+
       const data = await res.json();
 
-      // ✅ FIXED
+      if (!res.ok) throw new Error(data.message);
+
       setMatches(data.matches || []);
 
-    } catch {
-      alert("Failed to fetch matches");
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -124,15 +143,18 @@ export default function DonorProfile() {
         Donor Profile
       </h2>
 
-      {/* ================= */}
       {/* BLOOD DONOR */}
-      {/* ================= */}
       <div className="bg-white p-4 rounded-2xl shadow-lg mb-4">
-
         <p className="font-semibold mb-3">🩸 Blood Donor</p>
 
         <input name="fullName" placeholder="Name" value={form.fullName} onChange={handleChange} className="input-field mb-2" />
         <input name="dob" type="date" value={form.dob} onChange={handleChange} className="input-field mb-2" />
+
+        <select name="gender" value={form.gender} onChange={handleChange} className="input-field mb-2">
+          <option value="">Gender</option>
+          <option>male</option>
+          <option>female</option>
+        </select>
 
         <select name="bloodGroup" value={form.bloodGroup} onChange={handleChange} className="input-field mb-2">
           <option value="">Blood Group</option>
@@ -140,20 +162,18 @@ export default function DonorProfile() {
           <option>A-</option><option>B-</option><option>O-</option><option>AB-</option>
         </select>
 
-        <button
-          onClick={handleSave}
-          className="w-full bg-green-600 text-white py-2 rounded-xl"
-        >
+        <input name="city" placeholder="City" value={form.city} onChange={handleChange} className="input-field mb-2" />
+        <input name="state" placeholder="State" value={form.state} onChange={handleChange} className="input-field mb-2" />
+        <input name="address" placeholder="Address" value={form.address} onChange={handleChange} className="input-field mb-2" />
+        <input name="pinCode" placeholder="Pin Code" value={form.pinCode} onChange={handleChange} className="input-field mb-2" />
+
+        <button onClick={handleSave} className="w-full bg-green-600 text-white py-2 rounded-xl">
           {loading ? "Saving..." : "Save Blood Profile"}
         </button>
-
       </div>
 
-      {/* ================= */}
-      {/* STEM CELL DONOR */}
-      {/* ================= */}
+      {/* STEM CELL */}
       <div className="bg-white p-4 rounded-2xl shadow-lg mb-4">
-
         <p className="font-semibold mb-3">🧬 Stem Cell Donor</p>
 
         <label className="flex items-center gap-2 mb-3">
@@ -168,55 +188,39 @@ export default function DonorProfile() {
 
         {form.isStemDonor && (
           <div className="space-y-2">
-
             <select name="donorType" value={form.donorType} onChange={handleChange} className="input-field">
               <option value="BONE_MARROW">Bone Marrow</option>
               <option value="PERIPHERAL_BLOOD">Peripheral Blood</option>
             </select>
 
-            {/* HLA INPUTS */}
             <input name="hlaA" placeholder="HLA-A" value={form.hlaA} onChange={handleChange} className="input-field" />
             <input name="hlaB" placeholder="HLA-B" value={form.hlaB} onChange={handleChange} className="input-field" />
             <input name="hlaC" placeholder="HLA-C" value={form.hlaC} onChange={handleChange} className="input-field" />
             <input name="hlaDRB1" placeholder="HLA-DRB1" value={form.hlaDRB1} onChange={handleChange} className="input-field" />
             <input name="hlaDQB1" placeholder="HLA-DQB1" value={form.hlaDQB1} onChange={handleChange} className="input-field" />
 
-            <button
-              onClick={registerStem}
-              className="w-full bg-blue-600 text-white py-2 rounded-xl"
-            >
+            <button onClick={registerStem} className="w-full bg-blue-600 text-white py-2 rounded-xl">
               Register Stem Donor
             </button>
 
-            <button
-              onClick={getMatches}
-              className="w-full bg-purple-600 text-white py-2 rounded-xl"
-            >
+            <button onClick={getMatches} className="w-full bg-purple-600 text-white py-2 rounded-xl">
               Find Matches
             </button>
-
           </div>
         )}
-
       </div>
 
-      {/* ================= */}
       {/* MATCH RESULTS */}
-      {/* ================= */}
       {matches.length > 0 && (
         <div className="bg-white p-4 rounded-2xl shadow-lg">
-
           <p className="font-semibold mb-3">🧬 Matches</p>
-
           {matches.map((m, i) => (
             <div key={i} className="border p-2 rounded mb-2">
               Score: {m.score}/10
             </div>
           ))}
-
         </div>
       )}
-
     </div>
   );
 }
