@@ -451,7 +451,8 @@ export default function DonorProfile() {
         <select name="gender" value={form.gender} onChange={handleChange} className="input-field mb-2">
           <option value="">Gender</option>
           <option value="male">Male</option>
-          <option value="female">Female</option>
+          <option value="male">Female</option>
+          <option value="female">other</option>
         </select>
 
         <select name="bloodGroup" value={form.bloodGroup} onChange={handleChange} className="input-field mb-2">
