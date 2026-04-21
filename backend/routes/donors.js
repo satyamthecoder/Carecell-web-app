@@ -63,7 +63,7 @@ router.post('/register', protect, async (req, res) => {
     const allowedToDonate = canDonateNow(lastDonationDate, gender);
 
     const blockedDiseases = ['hiv', 'hepatitis', 'cancer'];
-    const diseaseText = (diseases || "").toLowerCase();
+    const diseaseText = (diseases || "");
 
     const hasBlockedDisease = blockedDiseases.some(d =>
       diseaseText.includes(d)
