@@ -302,8 +302,6 @@ module.exports = router;*/
 
 
 // full code for with new logic  
-
-
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
@@ -327,7 +325,7 @@ const compatibility = {
 };
 
 // ==============================
-// 📍 DISTANCE CALCULATION
+// 📍 DISTANCE
 // ==============================
 const getDistance = (lat1, lon1, lat2, lon2) => {
   if (!lat2 || !lon2) return 9999;
@@ -346,7 +344,7 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 // ==============================
-// 🩸 CREATE REQUEST + SMART MATCH
+// 🩸 CREATE REQUEST + MATCH
 // ==============================
 router.post('/', protect, async (req, res) => {
   try {
@@ -403,9 +401,6 @@ router.post('/', protect, async (req, res) => {
       'donorProfile.bloodGroup': { $in: validDonors }
     });
 
-    // ==============================
-    // 🔥 SMART MATCHING ENGINE
-    // ==============================
     const matches = donors.map(donor => {
       const dLat = donor?.location?.coordinates?.lat || 0;
       const dLng = donor?.location?.coordinates?.lng || 0;
@@ -417,33 +412,29 @@ router.post('/', protect, async (req, res) => {
 
       let score = 0;
 
-      // blood match (already filtered)
       score += 50;
 
-      // location match
       if (reqPincode && donorPincode && reqPincode === donorPincode) {
         score += 30;
       } else if (reqCity && donorCity && reqCity === donorCity) {
         score += 20;
       }
 
-      // distance bonus
       if (distance < 5) score += 30;
       else if (distance < 15) score += 20;
       else if (distance < 30) score += 10;
 
-      // urgency
       score += urgencyWeight[urgency] || 1;
 
       return {
         request: request._id,
         donor: donor._id,
         distance,
-        score
+        score,
+        status: "pending" // ✅ IMPORTANT FIX
       };
     });
 
-    // sort best first
     matches.sort((a, b) => b.score - a.score);
 
     const finalMatches = matches.slice(0, 20);
@@ -497,7 +488,10 @@ router.get('/match', protect, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const matches = await Match.find({ donor: userId })
+    const matches = await Match.find({
+      donor: userId,
+      status: { $ne: "closed" } // ✅ IMPORTANT
+    })
       .populate({
         path: 'request',
         populate: {
@@ -581,6 +575,57 @@ router.post('/:matchId/respond', protect, async (req, res) => {
 
   } catch (error) {
     console.error("RESPOND ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// ==============================
+// ✅ NEW: MARK AS FULFILLED
+// ==============================
+router.put('/:id/fulfill', protect, async (req, res) => {
+  try {
+    const request = await BloodRequest.findById(req.params.id);
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found"
+      });
+    }
+
+    if (request.patient.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    if (request.status === 'fulfilled') {
+      return res.status(400).json({
+        success: false,
+        message: "Already fulfilled"
+      });
+    }
+
+    request.status = 'fulfilled';
+    await request.save();
+
+    // 🔥 CLOSE ALL MATCHES
+    await Match.updateMany(
+      { request: request._id },
+      { status: 'closed' }
+    );
+
+    res.json({
+      success: true,
+      message: "Request marked as fulfilled"
+    });
+
+  } catch (error) {
+    console.error("FULFILL ERROR:", error);
     res.status(500).json({
       success: false,
       message: error.message

@@ -530,15 +530,42 @@ export default function DonorProfile() {
 
 // ne code with new logic 
 
-
 import React, { useEffect, useState } from "react";
 import api from "../utils/api";
 import toast from "react-hot-toast";
 import LoadingSpinner from "../components/LoadingSpinner";
 
+const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
 export default function DonorProfile() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const [form, setForm] = useState({
+    bloodGroup: 'A+',
+    city: '',
+    state: '',
+    fullAddress: '',
+    pinCode: '',
+    canDonatePlatelet: false
+  });
+
+  // =========================
+  // ACTIVATE DONOR
+  // =========================
+  const activateDonor = async () => {
+    try {
+      await api.post('/donors/activate', {
+        ...form
+      });
+
+      toast.success("Donor Activated ✅");
+      loadMatches();
+
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
 
   // =========================
   // LOAD MATCHES
@@ -560,28 +587,17 @@ export default function DonorProfile() {
   }, []);
 
   // =========================
-  // RESPOND (ACCEPT / REJECT)
+  // RESPOND
   // =========================
   const respond = async (matchId, status) => {
     try {
-      await api.post(`/blood-requests/${matchId}/respond`, {
-        status
-      });
+      await api.post(`/blood-requests/${matchId}/respond`, { status });
 
       toast.success(`Request ${status}`);
       loadMatches();
     } catch (err) {
       toast.error(err.message);
     }
-  };
-
-  // =========================
-  // STATUS COLOR
-  // =========================
-  const statusColor = (s) => {
-    if (s === "accepted") return "text-green-600";
-    if (s === "rejected") return "text-red-500";
-    return "text-yellow-500";
   };
 
   return (
@@ -591,82 +607,116 @@ export default function DonorProfile() {
         Donor Dashboard
       </h2>
 
+      {/* ========================= */}
+      {/* 🔥 DONOR ACTIVATION FORM */}
+      {/* ========================= */}
+      <div className="bg-white p-4 rounded-2xl shadow mb-5">
+
+        <h3 className="font-semibold mb-3">Become a Blood Donor</h3>
+
+        <select
+          value={form.bloodGroup}
+          onChange={e => setForm(f => ({ ...f, bloodGroup: e.target.value }))}
+          className="w-full p-2 border rounded mb-2"
+        >
+          {bloodGroups.map(bg => (
+            <option key={bg}>{bg}</option>
+          ))}
+        </select>
+
+        <input
+          placeholder="City"
+          value={form.city}
+          onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+          className="w-full p-2 border rounded mb-2"
+        />
+
+        <input
+          placeholder="State"
+          value={form.state}
+          onChange={e => setForm(f => ({ ...f, state: e.target.value }))}
+          className="w-full p-2 border rounded mb-2"
+        />
+
+        <input
+          placeholder="Full Address"
+          value={form.fullAddress}
+          onChange={e => setForm(f => ({ ...f, fullAddress: e.target.value }))}
+          className="w-full p-2 border rounded mb-2"
+        />
+
+        <input
+          placeholder="Pincode"
+          value={form.pinCode}
+          onChange={e => setForm(f => ({ ...f, pinCode: e.target.value }))}
+          className="w-full p-2 border rounded mb-2"
+        />
+
+        <label className="flex items-center gap-2 mb-3">
+          <input
+            type="checkbox"
+            checked={form.canDonatePlatelet}
+            onChange={e => setForm(f => ({ ...f, canDonatePlatelet: e.target.checked }))}
+          />
+          Can donate platelets
+        </label>
+
+        <button
+          onClick={activateDonor}
+          className="w-full bg-green-600 text-white py-2 rounded-xl"
+        >
+          Activate as Donor
+        </button>
+
+      </div>
+
+      {/* ========================= */}
+      {/* MATCHES */}
+      {/* ========================= */}
       {loading ? <LoadingSpinner /> : (
         <div className="space-y-4">
 
           {matches.map(m => (
-            <div
-              key={m._id}
-              className="bg-white p-4 rounded-2xl shadow-lg border-l-4 border-green-500"
-            >
+            <div key={m._id} className="bg-white p-4 rounded-2xl shadow-lg border-l-4 border-green-500">
 
-              {/* BLOOD + URGENCY */}
-              <div className="flex justify-between">
-                <p className="font-bold text-green-700">
-                  {m.request?.bloodGroup}
-                </p>
+              <p className="font-bold text-green-700">
+                {m.request?.bloodGroup}
+              </p>
 
-                <span className="text-xs bg-red-500 text-white px-2 py-1 rounded">
-                  {m.request?.urgency}
-                </span>
-              </div>
-
-              {/* HOSPITAL */}
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-600">
                 {m.request?.hospitalName}
               </p>
 
-              {/* DISTANCE */}
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500">
                 Distance: {m.distance?.toFixed(1)} km
               </p>
 
-              {/* STATUS */}
-              <p className={`text-sm font-semibold mt-1 ${statusColor(m.status)}`}>
+              <p className="text-sm font-semibold text-yellow-600">
                 {m.status}
               </p>
 
-              {/* ACTIONS */}
               {m.status === "pending" && (
                 <div className="flex gap-2 mt-3">
                   <button
                     onClick={() => respond(m._id, "accepted")}
-                    className="flex-1 bg-green-500 text-white py-1 rounded hover:bg-green-600"
+                    className="flex-1 bg-green-500 text-white py-1 rounded"
                   >
                     Accept
                   </button>
 
                   <button
                     onClick={() => respond(m._id, "rejected")}
-                    className="flex-1 bg-red-500 text-white py-1 rounded hover:bg-red-600"
+                    className="flex-1 bg-red-500 text-white py-1 rounded"
                   >
                     Reject
                   </button>
                 </div>
               )}
 
-              {/* 🔥 SHOW DETAILS ONLY AFTER ACCEPT */}
-              {m.status === "accepted" && m.patient && (
-                <div className="mt-3 p-3 bg-green-50 rounded-xl text-sm border border-green-200">
-                  
-                  <p className="font-semibold text-green-700 mb-1">
-                    Patient Details
-                  </p>
-
-                  <p>👤 {m.patient.name}</p>
-                  <p className="text-blue-600">📞 {m.patient.phone}</p>
-
-                  <p className="text-gray-600 mt-1">
-                    🏥 {m.request?.hospitalName}
-                  </p>
-                </div>
-              )}
-
-              {/* REJECTED INFO */}
-              {m.status === "rejected" && (
-                <div className="mt-2 text-xs text-red-400">
-                  You rejected this request
-                </div>
+              {m.patient && (
+                <p className="mt-2 text-blue-600">
+                  📞 {m.patient.phone}
+                </p>
               )}
 
             </div>

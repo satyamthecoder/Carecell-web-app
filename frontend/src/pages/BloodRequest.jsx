@@ -369,12 +369,12 @@ export default function BloodRequest() {
   }, [tab]);
 
   // =========================
-  // 🔥 LOAD PATIENT MATCHES (NEW API)
+  // ✅ FIXED MATCH API
   // =========================
   const loadMatches = async () => {
     setLoadingMatches(true);
     try {
-      const res = await api.get('/patient-matches');
+      const res = await api.get('/blood-requests/match');
       setMatches(res.matches || []);
     } catch (err) {
       toast.error("Failed to load matches");
@@ -423,11 +423,25 @@ export default function BloodRequest() {
   };
 
   // =========================
+  // ✅ NEW: MARK AS FULFILLED
+  // =========================
+  const markFulfilled = async (id) => {
+    try {
+      await api.put(`/blood-requests/${id}/fulfill`);
+      toast.success("Marked as fulfilled");
+      loadRequests();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  // =========================
   // UI HELPERS
   // =========================
   const statusColor = (s) => {
     if (s === 'accepted') return 'text-green-600';
     if (s === 'rejected') return 'text-red-500';
+    if (s === 'fulfilled') return 'text-blue-600';
     return 'text-yellow-500';
   };
 
@@ -499,13 +513,13 @@ export default function BloodRequest() {
             <option value="platelets">Platelets</option>
           </select>
 
+          {/* ✅ FIXED URGENCY */}
           <select
             value={form.urgency}
             onChange={e => setForm(f => ({ ...f, urgency: e.target.value }))}
             className="w-full p-2 border rounded-lg mb-3"
           >
             <option value="emergency">Emergency</option>
-            <option value="high">High</option>
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
@@ -520,7 +534,7 @@ export default function BloodRequest() {
       )}
 
       {/* ========================= */}
-      {/* MATCHES TAB (NEW SYSTEM) */}
+      {/* MATCHES TAB */}
       {/* ========================= */}
       {tab === 'matches' && (
         <div>
@@ -528,10 +542,10 @@ export default function BloodRequest() {
             <div className="space-y-3">
 
               {matches.map(m => (
-                <div key={m.matchId} className="bg-white p-4 rounded-2xl shadow-lg border-l-4 border-green-500">
+                <div key={m._id} className="bg-white p-4 rounded-2xl shadow-lg border-l-4 border-green-500">
 
                   <p className="font-bold text-green-700">
-                    {m.donor.bloodGroup} Donor
+                    {m.request?.bloodGroup}
                   </p>
 
                   <p className="text-sm text-gray-500">
@@ -542,9 +556,9 @@ export default function BloodRequest() {
                     {m.status}
                   </p>
 
-                  {m.donor.phone && (
+                  {m.patient && (
                     <p className="text-blue-600 mt-2">
-                      📞 {m.donor.phone}
+                      📞 {m.patient.phone}
                     </p>
                   )}
 
@@ -571,8 +585,24 @@ export default function BloodRequest() {
             <div className="space-y-3">
               {requests.map(r => (
                 <div key={r._id} className="bg-white p-4 rounded-2xl shadow">
-                  <p className="font-bold">{r.bloodGroup}</p>
-                  <p className="text-sm">{r.hospitalName}</p>
+
+                  <p className="font-bold text-green-700">{r.bloodGroup}</p>
+                  <p className="text-sm text-gray-600">{r.hospitalName}</p>
+
+                  <p className={`text-sm font-semibold ${statusColor(r.status)}`}>
+                    {r.status}
+                  </p>
+
+                  {/* ✅ NEW BUTTON */}
+                  {r.status === 'active' && (
+                    <button
+                      onClick={() => markFulfilled(r._id)}
+                      className="mt-2 bg-blue-500 text-white px-3 py-1 rounded"
+                    >
+                      Mark as Fulfilled
+                    </button>
+                  )}
+
                 </div>
               ))}
             </div>
