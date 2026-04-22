@@ -263,7 +263,7 @@ export default function DonorProfile() {
 
 
 // new code for blood request 
-
+/*
 import React, { useState, useEffect } from "react";
 import { donorAPI } from "../utils/api";
 import useAuthStore from "../context/authStore";
@@ -441,7 +441,7 @@ export default function DonorProfile() {
         Donor Profile
       </h2>
 
-      {/* BLOOD DONOR */}
+      {/* BLOOD DONOR *//*
       <div className="bg-white p-4 rounded-2xl shadow-lg mb-4">
         <p className="font-semibold mb-3">🩸 Blood Donor</p>
 
@@ -471,7 +471,7 @@ export default function DonorProfile() {
         </button>
       </div>
 
-      {/* STEM CELL */}
+      {/* STEM CELL *//*
       <div className="bg-white p-4 rounded-2xl shadow-lg mb-4">
         <p className="font-semibold mb-3">🧬 Stem Cell Donor</p>
 
@@ -511,7 +511,7 @@ export default function DonorProfile() {
         )}
       </div>
 
-      {/* MATCH RESULTS */}
+      {/* MATCH RESULTS *//*
       {matches.length > 0 && (
         <div className="bg-white p-4 rounded-2xl shadow-lg">
           <p className="font-semibold mb-3">🧬 Matches</p>
@@ -523,6 +523,164 @@ export default function DonorProfile() {
           ))}
         </div>
       )}
+    </div>
+  );
+}*/
+
+
+// ne code with new logic 
+
+
+import React, { useEffect, useState } from "react";
+import api from "../utils/api";
+import toast from "react-hot-toast";
+import LoadingSpinner from "../components/LoadingSpinner";
+
+export default function DonorProfile() {
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // =========================
+  // LOAD MATCHES
+  // =========================
+  const loadMatches = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/blood-requests/match");
+      setMatches(res.matches || []);
+    } catch (err) {
+      toast.error("Failed to load matches");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMatches();
+  }, []);
+
+  // =========================
+  // RESPOND (ACCEPT / REJECT)
+  // =========================
+  const respond = async (matchId, status) => {
+    try {
+      await api.post(`/blood-requests/${matchId}/respond`, {
+        status
+      });
+
+      toast.success(`Request ${status}`);
+      loadMatches();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  // =========================
+  // STATUS COLOR
+  // =========================
+  const statusColor = (s) => {
+    if (s === "accepted") return "text-green-600";
+    if (s === "rejected") return "text-red-500";
+    return "text-yellow-500";
+  };
+
+  return (
+    <div className="min-h-screen bg-green-50 p-4">
+
+      <h2 className="text-2xl font-bold text-green-700 mb-4">
+        Donor Dashboard
+      </h2>
+
+      {loading ? <LoadingSpinner /> : (
+        <div className="space-y-4">
+
+          {matches.map(m => (
+            <div
+              key={m._id}
+              className="bg-white p-4 rounded-2xl shadow-lg border-l-4 border-green-500"
+            >
+
+              {/* BLOOD + URGENCY */}
+              <div className="flex justify-between">
+                <p className="font-bold text-green-700">
+                  {m.request?.bloodGroup}
+                </p>
+
+                <span className="text-xs bg-red-500 text-white px-2 py-1 rounded">
+                  {m.request?.urgency}
+                </span>
+              </div>
+
+              {/* HOSPITAL */}
+              <p className="text-sm text-gray-600 mt-1">
+                {m.request?.hospitalName}
+              </p>
+
+              {/* DISTANCE */}
+              <p className="text-sm text-gray-500 mt-1">
+                Distance: {m.distance?.toFixed(1)} km
+              </p>
+
+              {/* STATUS */}
+              <p className={`text-sm font-semibold mt-1 ${statusColor(m.status)}`}>
+                {m.status}
+              </p>
+
+              {/* ACTIONS */}
+              {m.status === "pending" && (
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => respond(m._id, "accepted")}
+                    className="flex-1 bg-green-500 text-white py-1 rounded hover:bg-green-600"
+                  >
+                    Accept
+                  </button>
+
+                  <button
+                    onClick={() => respond(m._id, "rejected")}
+                    className="flex-1 bg-red-500 text-white py-1 rounded hover:bg-red-600"
+                  >
+                    Reject
+                  </button>
+                </div>
+              )}
+
+              {/* 🔥 SHOW DETAILS ONLY AFTER ACCEPT */}
+              {m.status === "accepted" && m.patient && (
+                <div className="mt-3 p-3 bg-green-50 rounded-xl text-sm border border-green-200">
+                  
+                  <p className="font-semibold text-green-700 mb-1">
+                    Patient Details
+                  </p>
+
+                  <p>👤 {m.patient.name}</p>
+                  <p className="text-blue-600">📞 {m.patient.phone}</p>
+
+                  <p className="text-gray-600 mt-1">
+                    🏥 {m.request?.hospitalName}
+                  </p>
+                </div>
+              )}
+
+              {/* REJECTED INFO */}
+              {m.status === "rejected" && (
+                <div className="mt-2 text-xs text-red-400">
+                  You rejected this request
+                </div>
+              )}
+
+            </div>
+          ))}
+
+          {matches.length === 0 && (
+            <p className="text-center text-gray-500">
+              No matching requests
+            </p>
+          )}
+
+        </div>
+      )}
+
     </div>
   );
 }

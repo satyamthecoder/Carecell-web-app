@@ -357,6 +357,8 @@ app.get('/api/health', (req, res) => {
 // =========================
 // API ROUTES
 // =========================
+//new below 1 api for paitent matches 
+app.use('/api/patient-matches', require('./routes/patientMatches'));
 app.use('/api/schemes', require('./routes/schemes'));
 app.use("/api/patient", patientRoutes);
 app.use("/api/healthcard", require("./routes/healthcard"));
