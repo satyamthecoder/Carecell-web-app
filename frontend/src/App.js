@@ -6,7 +6,7 @@ import useAuthStore from './context/authStore';
 import Layout from './components/Layout';
 import LoadingSpinner from './components/LoadingSpinner';
 
-// Request + Admin
+// Request + Admi
 import RequestHelp from './pages/RequestHelp';
 import AdminDonations from './pages/AdminDonations';
 
